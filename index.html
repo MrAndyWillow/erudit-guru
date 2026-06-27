@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#15120F">
+<title>Подбор слов — Эрудит</title>
+<style>
+:root{
+  --bg:#15120F;
+  --panel:#1E1914;
+  --panel-2:#262019;
+  --panel-3:#2C2419;
+  --line:#3A3026;
+  --line-soft:#2A241C;
+  --ink:#ECE4D4;
+  --ink-dim:#A89A82;
+  --ink-faint:#6F6452;
+  --tile:#E9DEC2;
+  --tile-edge:#C9B98C;
+  --tile-text:#2C2013;
+  --gold:#D7A23F;
+  --gold-deep:#8A5E16;
+  --jade:#4E9483;
+  --jade-deep:#1E3A33;
+  --rust:#B5573F;
+  --font-display: "New York", ui-serif, Georgia, "Times New Roman", serif;
+  --font-body: -apple-system, ui-sans-serif, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  background:
+    radial-gradient(ellipse at top, #1c1712 0%, var(--bg) 55%) ;
+  color:var(--ink);
+  font-family:var(--font-body);
+  min-height:100vh;
+  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-text-size-adjust:100%;
+}
+.wrap{
+  max-width: 760px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 18px) 16px 60px;
+}
+
+/* ---------- header ---------- */
+header.top{ margin-bottom: 22px; }
+.eyebrow{
+  font-family:var(--font-mono);
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  font-size:.68rem;
+  color: var(--gold);
+  margin: 0 0 10px;
+}
+.title-row{
+  display:flex; align-items:flex-end; justify-content:space-between; gap:14px; flex-wrap:wrap;
+}
+.title-tiles{ display:flex; gap:5px; }
+.title-tiles .tile{ width:2.5rem; height:2.5rem; font-size:1.2rem; }
+@media (min-width:480px){ .title-tiles .tile{ width:2.9rem; height:2.9rem; font-size:1.4rem; } }
+.title-tiles .tile{ animation: bob 3.6s ease-in-out infinite; }
+.title-tiles .tile:nth-child(2){ animation-delay:.15s;}
+.title-tiles .tile:nth-child(3){ animation-delay:.3s;}
+.title-tiles .tile:nth-child(4){ animation-delay:.45s;}
+.title-tiles .tile:nth-child(5){ animation-delay:.6s;}
+.title-tiles .tile:nth-child(6){ animation-delay:.75s;}
+@keyframes bob{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-3px);} }
+@media (prefers-reduced-motion:reduce){ .title-tiles .tile{ animation:none; } }
+
+.dict-stat{
+  font-family:var(--font-mono);
+  font-size:.78rem;
+  color:var(--ink-dim);
+  text-align:right;
+  line-height:1.35;
+}
+.dict-stat b{ color:var(--ink); font-weight:600; }
+.subtitle{
+  margin: 14px 0 0;
+  color: var(--ink-dim);
+  font-size: .95rem;
+  line-height:1.5;
+  max-width: 46ch;
+}
+.dict-toggle{ display:flex; gap:6px; margin: 16px 0 8px; }
+.dict-opt{
+  appearance:none; border:1px solid var(--line); background:var(--panel); color:var(--ink-dim);
+  font-family:var(--font-body); font-size:.82rem; font-weight:600; padding:8px 12px; border-radius:999px;
+  cursor:pointer;
+}
+.dict-opt[aria-pressed="true"]{ background:var(--jade-deep); color:#9FE0CD; border-color:var(--jade); }
+.dict-opt:active{ transform:scale(.97); }
+
+/* ---------- search card ---------- */
+.field-label{
+  margin: 18px 0 2px; font-family:var(--font-display); font-weight:600; font-size:.95rem; color:var(--ink);
+}
+.field-label:first-of-type{ margin-top:0; }
+.field-group{ padding-top:14px; border-top:1px dashed var(--line); margin-top:4px; }
+.field-group:first-child{ padding-top:0; border-top:none; margin-top:0; }
+
+.card{
+  background: var(--panel);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:18px;
+  margin-bottom:16px;
+}
+.card h2{
+  margin:0 0 4px; font-family:var(--font-display); font-size:1.05rem; font-weight:600; color:var(--ink);
+}
+.hint{ margin:2px 0 14px; color:var(--ink-dim); font-size:.84rem; line-height:1.5; }
+
+/* ---------- rack input ---------- */
+.rack-input-row{ display:flex; gap:8px; align-items:center; margin-bottom:10px; }
+.rack-input-row input[type="text"]{
+  flex:1;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  border-radius:10px;
+  color:var(--ink);
+  font-family:var(--font-mono);
+  font-size:1.05rem;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  padding:12px 14px;
+  outline:none;
+}
+.rack-input-row input[type="text"]:focus{ border-color:var(--gold); }
+.icon-btn{
+  appearance:none; border:1px solid var(--line); background:var(--panel-2); color:var(--ink-dim);
+  width:42px; height:42px; min-width:42px; border-radius:10px; font-size:1.05rem; cursor:pointer;
+}
+.icon-btn:active{ transform:scale(.94); }
+
+.tile-preview{ display:flex; flex-wrap:wrap; gap:6px; min-height:2.6rem; margin-bottom:14px; }
+
+.letter-pad{
+  display:grid; grid-template-columns: repeat(auto-fill, minmax(34px,1fr)); gap:6px; margin-bottom:14px;
+}
+.pad-key{
+  appearance:none; border:1px solid var(--tile-edge); background:var(--tile); color:var(--tile-text);
+  border-radius:7px; height:38px; font-family:var(--font-display); font-weight:600; font-size:.92rem;
+  cursor:pointer; text-transform:uppercase;
+}
+.pad-key:active{ transform: scale(.92); }
+.pad-key.joker{ background: var(--gold); border-color:#8a5e16; color:#241804; box-shadow: 0 0 0 1px rgba(0,0,0,.25) inset, 0 0 10px rgba(215,162,63,.55); }
+.pad-key.wide{ grid-column: span 2; background:var(--panel-3); color:var(--ink-dim); border-color:var(--line); font-family:var(--font-body); font-size:.8rem; font-weight:600;}
+
+.row-options{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.toggle-line{ display:flex; align-items:center; gap:9px; color:var(--ink-dim); font-size:.88rem; }
+.toggle-line input[type="checkbox"]{ width:18px; height:18px; accent-color:var(--gold); }
+.joker-stepper{ display:flex; align-items:center; gap:8px; font-size:.85rem; color:var(--ink-dim); font-family:var(--font-mono);}
+.joker-stepper button{ width:28px; height:28px; border-radius:8px; }
+
+.primary-btn{
+  appearance:none; width:100%; border:none; border-radius:12px; padding:14px;
+  background: linear-gradient(180deg, #E3B658, var(--gold)); color:#241804; font-weight:700; font-size:1rem;
+  font-family:var(--font-body); cursor:pointer; box-shadow: 0 2px 0 rgba(0,0,0,.2), 0 6px 14px rgba(0,0,0,.35);
+}
+.primary-btn:active{ transform: translateY(1px); }
+.primary-btn:disabled{ opacity:.5; }
+
+/* ---------- mask wildcard pad keys ---------- */
+.pad-key.wild{ background:transparent; border:1.5px dashed var(--tile-edge); color:var(--ink-dim); font-family:var(--font-mono); }
+
+/* ---------- results ---------- */
+.results-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:4px; flex-wrap:wrap; }
+.results-caption{ color:var(--ink-faint); font-size:.76rem; margin:0 0 12px; line-height:1.5; }
+.results-caption .ex{ display:inline-flex; align-items:center; gap:3px; margin-right:10px; }
+.results-caption .tile{ width:1.2rem; height:1.2rem; font-size:.6rem; border-radius:4px; }
+.results-count{ font-size:.88rem; color:var(--ink-dim); }
+.results-count b{ color:var(--ink); }
+select.sort-select{
+  background:var(--panel-2); color:var(--ink); border:1px solid var(--line); border-radius:9px; padding:8px 10px; font-size:.82rem; font-family:var(--font-body);
+}
+.result-list{ display:flex; flex-direction:column; }
+.result-row{
+  display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--line-soft);
+  animation: rise .22s ease both;
+}
+@keyframes rise{ from{ opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
+@media (prefers-reduced-motion:reduce){ .result-row{ animation:none; } }
+.result-row .tiles{ display:flex; gap:3px; flex-wrap:wrap; }
+.result-row .tiles .tile{ width:1.9rem; height:1.9rem; font-size:.85rem; border-radius:6px; }
+.result-row .tiles .tile .pt{ font-size:.46rem; }
+.result-meta{ margin-left:auto; display:flex; align-items:center; gap:8px; }
+.badge{
+  font-family:var(--font-mono); font-size:.78rem; font-weight:700; border-radius:999px; padding:3px 9px;
+}
+.badge.score{ background: rgba(215,162,63,.16); color:var(--gold); }
+.badge.len{ background: rgba(255,255,255,.05); color:var(--ink-dim); }
+.badge.bingo{ background: rgba(78,148,131,.18); color:#7BC9B5; }
+
+.empty-state, .loading-state{
+  text-align:center; color:var(--ink-faint); padding:26px 10px; font-size:.9rem; line-height:1.6;
+}
+.more-btn{
+  width:100%; margin-top:10px; padding:11px; border-radius:10px; border:1px solid var(--line);
+  background:var(--panel-2); color:var(--ink-dim); font-size:.86rem; cursor:pointer;
+}
+
+/* ---------- legend / about ---------- */
+details.section{
+  background:var(--panel); border:1px solid var(--line); border-radius:16px; margin-bottom:14px; overflow:hidden;
+}
+details.section summary{
+  list-style:none; cursor:pointer; padding:16px 18px; font-family:var(--font-display); font-weight:600; color:var(--ink);
+  display:flex; align-items:center; justify-content:space-between;
+}
+details.section summary::-webkit-details-marker{ display:none; }
+details.section summary::after{ content:"+"; color:var(--ink-dim); font-family:var(--font-mono); font-size:1.1rem; }
+details.section[open] summary::after{ content:"–"; }
+.section-body{ padding: 0 18px 18px; color:var(--ink-dim); font-size:.88rem; line-height:1.65; }
+.legend-grid{
+  display:grid; grid-template-columns: repeat(auto-fill, minmax(64px,1fr)); gap:8px; margin-top:6px;
+}
+.legend-cell{
+  background:var(--tile); color:var(--tile-text); border-radius:8px; padding:7px 4px 5px; text-align:center; position:relative;
+}
+.legend-cell .lg-letter{ font-family:var(--font-display); font-weight:700; font-size:1.05rem; text-transform:uppercase; }
+.legend-cell .lg-pt{ font-family:var(--font-mono); font-size:.62rem; color:var(--gold-deep); font-weight:700; }
+.legend-cell .lg-ct{ font-family:var(--font-mono); font-size:.6rem; color:rgba(44,32,19,.55); }
+
+footer.note{ text-align:center; color:var(--ink-faint); font-size:.76rem; margin-top:26px; line-height:1.7; }
+
+/* ---------- board ---------- */
+.board-empty{ text-align:center; color:var(--ink-faint); padding:18px 10px; font-size:.88rem; line-height:1.6; }
+.board-active{ display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+.board-active .tiles{ display:flex; gap:3px; }
+.board-active .tiles .tile{ width:1.7rem; height:1.7rem; font-size:.78rem; }
+.board-active .tiles .tile .pt{ font-size:.4rem; }
+.orient-toggle{ display:flex; gap:6px; margin-left:auto; }
+.orient-toggle button{
+  appearance:none; border:1px solid var(--line); background:var(--panel-2); color:var(--ink-dim);
+  padding:7px 11px; border-radius:9px; font-size:.85rem; cursor:pointer;
+}
+.orient-toggle button[aria-pressed="true"]{ background:var(--jade-deep); color:#9FE0CD; border-color:var(--jade); }
+
+.board-grid{
+  display:grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr);
+  gap:2px; max-width:380px; margin:0 auto 14px; aspect-ratio:1/1;
+}
+.board-cell{
+  position:relative; border-radius:3px; background:var(--panel-3); border:1px solid var(--line-soft);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  aspect-ratio:1/1; width:100%; min-height:0;
+}
+.board-cell.L2{ background: rgba(78,148,131,.35); }
+.board-cell.L3{ background: rgba(86,143,196,.4); }
+.board-cell.W2{ background: rgba(215,162,63,.35); }
+.board-cell.W3{ background: rgba(181,87,63,.45); }
+.board-cell.center::after{ content:"★"; font-size:.55rem; color:var(--ink-dim); }
+.board-cell.start{ outline:2px solid var(--gold); z-index:2; }
+.board-cell.path{ outline:1.5px solid var(--gold); background:var(--gold); }
+.board-cell.path.used{ background: rgba(181,87,63,.55); }
+.board-cell.path .pl{ font-family:var(--font-display); font-weight:700; font-size:.5rem; color:#241804; text-transform:uppercase; }
+.board-cell:active{ filter:brightness(1.3); }
+@media (min-width:420px){ .board-cell .pl, .board-cell .fl{ font-size:.62rem; } }
+
+.board-cell.filled{ background:var(--tile); border-color:var(--tile-edge); }
+.board-cell.filled .fl{ font-family:var(--font-display); font-weight:700; font-size:.5rem; color:var(--tile-text); text-transform:uppercase; }
+.board-cell.filled.who-opp{ box-shadow: inset 0 0 0 1.5px var(--rust); }
+.board-cell.filled.who-me{ box-shadow: inset 0 0 0 1.5px var(--jade); }
+.board-cell.path .fl{ display:none; }
+
+.score-tally{ display:flex; align-items:center; gap:14px; margin-bottom:10px; font-size:.86rem; }
+.score-tally .st-item{ color:var(--ink-dim); }
+.score-tally .st-item b{ font-family:var(--font-mono); }
+.score-tally .st-me b{ color:#7BC9B5; }
+.score-tally .st-opp b{ color:#E08A73; }
+.score-tally .icon-btn{ margin-left:auto; }
+
+.move-history{ display:flex; flex-direction:column; gap:4px; margin-bottom:14px; max-height:160px; overflow-y:auto; }
+.move-history:empty{ display:none; }
+.mh-row{ display:flex; align-items:center; gap:8px; font-size:.82rem; padding:5px 8px; border-radius:8px; background:var(--panel-2); }
+.mh-row .mh-who{ width:7px; height:7px; border-radius:50%; flex:none; }
+.mh-row .mh-who.me{ background:var(--jade); }
+.mh-row .mh-who.opp{ background:var(--rust); }
+.mh-row .mh-word{ font-family:var(--font-display); font-weight:600; text-transform:uppercase; color:var(--ink); }
+.mh-row .mh-pos{ color:var(--ink-faint); font-family:var(--font-mono); font-size:.74rem; }
+.mh-row .mh-score{ margin-left:auto; font-family:var(--font-mono); color:var(--gold); font-weight:700; }
+.mh-row .mh-undo{ background:none; border:none; color:var(--ink-faint); font-size:.9rem; cursor:pointer; padding:0 2px; }
+
+.who-toggle{ display:flex; gap:6px; }
+.who-toggle button{
+  appearance:none; border:1px solid var(--line); background:var(--panel-2); color:var(--ink-dim);
+  padding:10px 12px; border-radius:9px; font-size:.85rem; cursor:pointer;
+}
+.who-toggle button[aria-pressed="true"]{ background:var(--jade-deep); color:#9FE0CD; border-color:var(--jade); }
+.pending-actions{ display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap; }
+.pending-actions .primary-btn{ margin:0; padding:12px; }
+
+.suggest-row-meta{ font-family:var(--font-mono); font-size:.74rem; color:var(--ink-faint); margin-right:auto; }
+
+.board-legend{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:14px; }
+.board-legend .lg-item{ display:flex; align-items:center; gap:5px; font-size:.74rem; color:var(--ink-dim); }
+.board-legend .lg-swatch{ width:14px; height:14px; border-radius:3px; }
+.board-legend .lg-swatch.L2{ background: rgba(78,148,131,.55); }
+.board-legend .lg-swatch.L3{ background: rgba(86,143,196,.6); }
+.board-legend .lg-swatch.W2{ background: rgba(215,162,63,.55); }
+.board-legend .lg-swatch.W3{ background: rgba(181,87,63,.65); }
+
+.score-breakdown{ background:var(--panel-2); border-radius:12px; padding:12px 14px; font-size:.84rem; color:var(--ink-dim); line-height:1.7; }
+.score-breakdown b{ color:var(--ink); }
+.score-breakdown .final{ font-size:1.3rem; font-family:var(--font-mono); font-weight:700; color:var(--gold); }
+.board-warn{ color:var(--rust); font-size:.84rem; margin:4px 0 0; }
+
+.go-board-btn{
+  appearance:none; border:1px solid var(--gold); background:transparent; color:var(--gold);
+  border-radius:999px; padding:4px 10px; font-size:.72rem; font-family:var(--font-body); font-weight:600; cursor:pointer;
+}
+.go-board-btn:active{ transform:scale(.95); }
+
+/* ---------- tile component ---------- */
+.tile{
+  display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
+  background:var(--tile); color:var(--tile-text); border-radius:8px; position:relative;
+  font-family:var(--font-display); font-weight:700; text-transform:uppercase; user-select:none;
+  box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 1px 0 rgba(0,0,0,.3), 0 3px 6px rgba(0,0,0,.35);
+  border:1px solid var(--tile-edge);
+}
+.tile .pt{ position:absolute; right:3px; bottom:1px; font-family:var(--font-mono); font-weight:700; color: rgba(44,32,19,.6); }
+.tile.joker{
+  background: var(--gold); color:#241804; border-color:#8a5e16;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.25) inset, 0 2px 6px rgba(215,162,63,.6), 0 0 0 2px rgba(215,162,63,.35);
+}
+.tile.joker .badge-star{ position:absolute; left:2px; top:1px; font-size:.5em; line-height:1; color:#241804; }
+.tile.fixed{ background:transparent; border:1.5px dashed var(--tile-edge); color:var(--ink-dim); box-shadow:none; }
+.tile.fixed .pt{ color:var(--ink-faint); }
+.tile.ghost{ background:transparent; border:1.5px dashed var(--line); color:var(--ink-faint); box-shadow:none; font-family:var(--font-mono); }
+
+/* ---------- loading overlay ---------- */
+#loading-overlay{
+  position:fixed; inset:0; background:var(--bg); display:flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:14px; z-index:50; transition:opacity .35s ease;
+}
+#loading-overlay .spin-tiles{ display:flex; gap:6px; }
+#loading-overlay .spin-tiles .tile{ width:2.2rem; height:2.2rem; animation: flip 1.1s ease-in-out infinite; }
+#loading-overlay .spin-tiles .tile:nth-child(2){ animation-delay:.12s; }
+#loading-overlay .spin-tiles .tile:nth-child(3){ animation-delay:.24s; }
+#loading-overlay .spin-tiles .tile:nth-child(4){ animation-delay:.36s; }
+@keyframes flip{ 0%,100%{ transform:rotateY(0deg);} 50%{ transform:rotateY(180deg);} }
+@media (prefers-reduced-motion:reduce){ #loading-overlay .spin-tiles .tile{ animation:none; } }
+#loading-overlay p{ color:var(--ink-dim); font-size:.85rem; font-family:var(--font-mono); }
+#loading-overlay.hide{ opacity:0; pointer-events:none; }
+
+[hidden]{ display:none !important; }
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="spin-tiles">
+    <div class="tile">Э</div><div class="tile">Р</div><div class="tile">У</div><div class="tile">Д</div>
+  </div>
+  <p id="loading-text">Загружаем словарь…</p>
+</div>
+
+<div class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">Словарный помощник</p>
+    <div class="title-row">
+      <div class="title-tiles" aria-hidden="true">
+        <div class="tile">Э<span class="pt">8</span></div>
+        <div class="tile">Р<span class="pt">1</span></div>
+        <div class="tile">У<span class="pt">2</span></div>
+        <div class="tile">Д<span class="pt">2</span></div>
+        <div class="tile">И<span class="pt">1</span></div>
+        <div class="tile">Т<span class="pt">1</span></div>
+      </div>
+      <div class="dict-stat" id="dict-stat">словарь: <b>—</b> слов</div>
+    </div>
+    <p class="subtitle">Собирайте слова из своих фишек или ищите слово по известным буквам на доске — с подсчётом очков по правилам «Эрудита».</p>
+
+    <div class="dict-toggle" role="radiogroup" aria-label="Словарь">
+      <button class="dict-opt" id="dict-strict" aria-pressed="true">Строгий словарь</button>
+      <button class="dict-opt" id="dict-free" aria-pressed="false">Свободный словарь</button>
+    </div>
+    <p class="hint" id="dict-explain" style="margin-bottom:0;"></p>
+  </header>
+
+  <!-- ===================== ПОИСК ===================== -->
+  <section class="card">
+    <h2>Поиск слова</h2>
+    <p class="hint">Заполните одно поле или оба сразу: буквы на руках подскажут, что можно собрать; маска — что подходит на свободное место на доске.</p>
+
+    <div class="field-group">
+      <p class="field-label">Мои фишки</p>
+      <p class="hint">Буквы, которые у вас на руках. «*» — пустая фишка (джокер), заменяет любую букву.</p>
+      <div class="rack-input-row">
+        <input type="text" id="hand-input" inputmode="text" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="например: котел*" maxlength="15">
+        <button class="icon-btn" id="hand-clear" title="Очистить" aria-label="Очистить">✕</button>
+      </div>
+      <div class="tile-preview" id="hand-preview" aria-hidden="true"></div>
+      <div class="letter-pad" id="hand-pad"></div>
+    </div>
+
+    <div class="field-group">
+      <p class="field-label">Маска на доске</p>
+      <p class="hint">Известные буквы — на своих местах. «?» — ровно одна неизвестная буква, «*» — любое количество букв подряд.</p>
+      <div class="rack-input-row">
+        <input type="text" id="mask-input" inputmode="text" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="например: ма*о или к?т?л" maxlength="15">
+        <button class="icon-btn" id="mask-clear" title="Очистить" aria-label="Очистить">✕</button>
+      </div>
+      <div class="tile-preview" id="mask-preview" aria-hidden="true"></div>
+      <div class="letter-pad" id="mask-pad"></div>
+    </div>
+
+    <div class="row-options">
+      <label class="toggle-line">
+        <input type="checkbox" id="repeat-toggle">
+        буквы можно использовать повторно
+      </label>
+    </div>
+
+    <button class="primary-btn" id="search-btn" disabled>Найти слова</button>
+  </section>
+
+  <section class="card" id="results-card" hidden>
+    <div class="results-head">
+      <div class="results-count" id="results-count"></div>
+      <select class="sort-select" id="results-sort">
+        <option value="score-desc">Очки: сначала больше</option>
+        <option value="score-asc">Очки: сначала меньше</option>
+        <option value="len-desc">Длина: сначала длиннее</option>
+        <option value="len-asc">Длина: сначала короче</option>
+        <option value="alpha">По алфавиту</option>
+        <option value="random">Случайно</option>
+      </select>
+    </div>
+    <p class="results-caption" id="results-caption" hidden></p>
+    <div class="result-list" id="results-list"></div>
+    <button class="more-btn" id="results-more" hidden>Показать ещё</button>
+  </section>
+
+  <!-- ===================== ДОСКА И КАРТА ИГРЫ ===================== -->
+  <section class="card">
+    <h2>Доска и множители</h2>
+    <p class="hint">Записывайте сюда все ходы — свои и соперника — и сервис будет подбирать лучший следующий ход с учётом всей карты партии.</p>
+
+    <div class="board-legend">
+      <span class="lg-item"><span class="lg-swatch L2"></span>×2 буква</span>
+      <span class="lg-item"><span class="lg-swatch L3"></span>×3 буква</span>
+      <span class="lg-item"><span class="lg-swatch W2"></span>×2 слово</span>
+      <span class="lg-item"><span class="lg-swatch W3"></span>×3 слово</span>
+    </div>
+
+    <div class="score-tally" id="score-tally">
+      <span class="st-item st-me">Я: <b id="score-me">0</b></span>
+      <span class="st-item st-opp">Соперник: <b id="score-opp">0</b></span>
+      <button class="icon-btn" id="game-clear" title="Очистить всю партию" aria-label="Очистить партию">⟲</button>
+    </div>
+
+    <div class="move-history" id="move-history"></div>
+
+    <div class="board-grid" id="board-grid"></div>
+
+    <div class="orient-toggle" role="radiogroup" aria-label="Направление" style="margin:0 0 12px;">
+      <button id="orient-h" aria-pressed="true" type="button">→ по горизонтали</button>
+      <button id="orient-v" aria-pressed="false" type="button">↓ по вертикали</button>
+    </div>
+
+    <div id="pending-empty" class="board-empty">Нажмите «на доску» у найденного слова, подберите ход кнопкой ниже, или впишите слово вручную, чтобы записать ход соперника.</div>
+
+    <div id="pending-wrap" hidden>
+      <div class="board-active">
+        <div class="tiles" id="pending-tiles"></div>
+      </div>
+      <p class="board-warn" id="board-warn" hidden></p>
+      <div class="score-breakdown" id="board-breakdown"></div>
+      <div class="pending-actions">
+        <div class="who-toggle" role="radiogroup" aria-label="Кто ходил">
+          <button id="who-me" aria-pressed="true" type="button">Я</button>
+          <button id="who-opp" aria-pressed="false" type="button">Соперник</button>
+        </div>
+        <button class="primary-btn" id="confirm-move" style="flex:1;">Подтвердить ход</button>
+        <button class="icon-btn" id="cancel-move" title="Отмена" aria-label="Отмена">✕</button>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <p class="field-label">Записать ход вручную</p>
+      <p class="hint">Для хода соперника (или своего хода, который не искали здесь) — впишите слово целиком, затем нажмите клетку начала на доске выше.</p>
+      <div class="rack-input-row">
+        <input type="text" id="manual-word-input" inputmode="text" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="слово целиком" maxlength="15">
+        <button class="icon-btn" id="manual-go" title="Выбрать на доске" aria-label="Выбрать на доске">→</button>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <p class="field-label">Подобрать лучший ход</p>
+      <p class="hint">Использует поле «мои фишки» выше и текущую карту доски, проверяя все пересечения со словами на доске.</p>
+      <button class="primary-btn" id="suggest-btn" type="button">Подобрать лучший ход</button>
+      <div id="suggest-status" class="hint" style="margin:10px 0 0;"></div>
+      <div class="result-list" id="suggest-list"></div>
+    </div>
+  </section>
+
+  <!-- ===================== LEGEND ===================== -->
+  <details class="section">
+    <summary>Стоимость и количество букв</summary>
+    <div class="section-body">
+      <p style="margin-top:0;">Набор этой игры: 128 фишек, включая 4 бесплатные звёздочки-джокера. Джокер заменяет любую букву, но сам не приносит очков. Буква «ё» отдельной фишки не имеет — приравнена к «е».</p>
+      <div class="legend-grid" id="legend-grid"></div>
+    </div>
+  </details>
+
+  <details class="section">
+    <summary>Как это работает</summary>
+    <div class="section-body">
+      <p style="margin-top:0;"><b>Мои фишки</b> — буквы у вас на руках. «*» в этом поле означает пустую фишку-джокер: она закрывает любую недостающую букву, но не даёт за это очков.</p>
+      <p><b>Маска на доске</b> — то, что уже известно по клеткам на доске (например, слово пересекается с другим). Обычные буквы означают «здесь стоит именно эта буква», «?» — «здесь ровно одна неизвестная буква», «*» — «здесь любое количество букв», в том числе ноль. Так можно искать и короткие вставки, и слова произвольной длины — например, маска «ма*о» найдёт слова, начинающиеся на «ма» и заканчивающиеся на «о», любой длины.</p>
+      <p><b>Оба поля вместе</b> — самый реалистичный режим. Буквы по маске, которые вам известны, считаются уже стоящими на доске и не тратят ваши фишки — расходуются только буквы, попадающие в «?» и «*». Очки при этом считаются за слово целиком, как в настоящей игре: и за уже стоящие, и за выставленные вами буквы.</p>
+      <p>В результатах буквы показаны тремя способами: обычная плитка — буква, которую вы выставляете своей фишкой; пунктирная — буква уже стоит на доске; золотая — эта позиция закрыта джокером и не приносит очков. Если вы выставляете все фишки за один ход, добавляется бонус +15 очков, как при «бинго» в настоящей игре.</p>
+      <p><b>Доска и множители</b> — у этой доски своя раскладка премиальных клеток: зелёная ×2 и синяя ×3 умножают очки только той буквы, что на них стоит; оранжевая ×2 и красная ×3 умножают очки всего слова целиком, причём сначала учитываются умножения букв, а затем — умножение слова. Если слово задевает несколько клеток-множителей слова, они умножаются друг на друга. Клетка даёт бонус только тогда, когда именно в этот ход на неё впервые ставится фишка — буквы, что были на доске и раньше, повторно бонус не приносят.</p>
+      <p><b>Карта игры</b> — записывайте сюда все ходы партии: свои (через «на доску» у найденного слова или у подобранного хода) и соперника (вручную — впишите слово целиком и укажите клетку на доске). Каждый ход сохраняется в истории со своим счётом, буквы остаются на доске для следующих ходов. Кнопка «Подобрать лучший ход» использует поле «Мои фишки» и всю текущую карту: она находит клетки, где можно пристроить новое слово к уже стоящим буквам, проверяет, что слово на пересечении тоже существует в словаре, и показывает варианты по убыванию очков. Бонус за все фишки за один ход и засчитанные клетки на доске не пересчитываются повторно для уже стоявших там букв.</p>
+      <p><b>Строгий и свободный словарь</b> — по официальным правилам «Эрудита» разрешены только нарицательные существительные в именительном падеже единственного числа (и множественном — если у слова нет формы единственного, например «ножницы», «сани»). «Строгий» словарь учитывает только такие формы. «Свободный» содержит все словоформы языка — падежи, числа, глаголы, прилагательные и так далее; он полезен для кроссвордов или игры по более вольным домашним правилам.</p>
+    </div>
+  </details>
+
+  <footer class="note">
+    Подбор слов для игры «Эрудит» · работает локально в браузере, без передачи данных<br>
+    Стоимость, количество букв и раскладка премиальных клеток могут отличаться в разных изданиях игры.
+  </footer>
+
+</div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   ДАННЫЕ О БУКВАХ
+============================================================ */
+const LETTER_ORDER = ['а','б','в','г','д','е','ж','з','и','й','к','л','м','н','о','п','р','с','т','у','ф','х','ц','ч','ш','щ','ъ','ы','ь','э','ю','я'];
+const LETTER_INFO = {
+  а:{p:1,c:10}, б:{p:3,c:3}, в:{p:2,c:5}, г:{p:3,c:3}, д:{p:3,c:5}, е:{p:2,c:10},
+  ж:{p:5,c:1}, з:{p:5,c:2}, и:{p:1,c:9}, й:{p:2,c:2}, к:{p:2,c:6}, л:{p:2,c:5}, м:{p:2,c:4},
+  н:{p:1,c:8}, о:{p:1,c:10}, п:{p:2,c:5}, р:{p:2,c:6}, с:{p:2,c:6}, т:{p:2,c:6}, у:{p:3,c:3},
+  ф:{p:8,c:1}, х:{p:5,c:1}, ц:{p:8,c:1}, ч:{p:5,c:2}, ш:{p:8,c:1}, щ:{p:8,c:1}, ъ:{p:15,c:1},
+  ы:{p:5,c:1}, ь:{p:5,c:2}, э:{p:10,c:1}, ю:{p:8,c:1}, я:{p:3,c:2}
+};
+const ALPHA_SIZE = LETTER_ORDER.length;
+const LETTER_TO_IDX = new Map(LETTER_ORDER.map((ch,i)=>[ch,i]));
+const POINTS = new Int16Array(ALPHA_SIZE);
+LETTER_ORDER.forEach((ch,i)=>{ POINTS[i]=LETTER_INFO[ch].p; });
+const JOKER_STOCK = 4;
+const MAX_LEN = 15;
+const SCRATCH = new Int16Array(ALPHA_SIZE);
+
+/* ============================================================
+   ДОСКА: раскладка премиальных клеток (15×15)
+   r=W3(слово×3) g=L2(буква×2) b=L3(буква×3) o=W2(слово×2) *=старт .=обычная
+============================================================ */
+const BOARD_SIZE = 15;
+const BOARD_ROWS = [
+"r..g...r...g..r",
+".b...o...o...b.",
+"..b...g.g...b..",
+"g..b...g...b..g",
+"....b.....b....",
+".o...........o.",
+"..g...g.g...g..",
+"r..g...*...g..r",
+"..g...g.g...g..",
+".o...........o.",
+"....b.....b....",
+"g..b...g...b..g",
+"..b...g.g...b..",
+".b...o...o...b.",
+"r..g...r...g..r"
+];
+const CELL_INFO = {
+  'g': { kind:'letter', factor:2, cls:'L2' },
+  'b': { kind:'letter', factor:3, cls:'L3' },
+  'o': { kind:'word',   factor:2, cls:'W2' },
+  'r': { kind:'word',   factor:3, cls:'W3' },
+  '*': { kind:'center', factor:1, cls:'center' },
+  '.': null
+};
+function cellAt(r,c){
+  if (r<0||c<0||r>=BOARD_SIZE||c>=BOARD_SIZE) return null;
+  return CELL_INFO[BOARD_ROWS[r][c]];
+}
+
+function pointOf(ch){ const idx = LETTER_TO_IDX.get(ch); return idx===undefined?0:POINTS[idx]; }
+
+function faceScore(word){
+  let s=0;
+  for (let i=0;i<word.length;i++) s += pointOf(word[i]);
+  return s;
+}
+
+function sanitizeRackChars(str){
+  return str.toLowerCase().replace(/ё/g,'е').replace(/[^а-я*]/g,'').slice(0,15);
+}
+function sanitizeMaskChars(str){
+  return str.toLowerCase().replace(/ё/g,'е').replace(/[^а-я?*]/g,'').slice(0,15);
+}
+
+function lettersToRack(str){
+  const counts = new Int16Array(ALPHA_SIZE);
+  let jokers = 0;
+  for (const ch of str){
+    if (ch === '*'){ jokers++; continue; }
+    const idx = LETTER_TO_IDX.get(ch);
+    if (idx !== undefined) counts[idx]++;
+  }
+  return {counts, jokers};
+}
+
+function evalNeeded(neededStr, rackInfo){
+  if (rackInfo.mode === 'set'){
+    for (let i=0;i<neededStr.length;i++){
+      if (!rackInfo.allowedSet.has(neededStr[i])) return null;
+    }
+    return { score: faceScore(neededStr), classes: new Array(neededStr.length).fill('real') };
+  }
+  SCRATCH.set(rackInfo.counts);
+  let left = rackInfo.jokers;
+  let score = 0;
+  const classes = new Array(neededStr.length);
+  for (let i=0;i<neededStr.length;i++){
+    const idx = LETTER_TO_IDX.get(neededStr[i]);
+    if (idx === undefined) return null;
+    if (SCRATCH[idx] > 0){ SCRATCH[idx]--; score += POINTS[idx]; classes[i]='real'; }
+    else {
+      if (left<=0) return null;
+      left--; classes[i]='joker';
+    }
+  }
+  return { score, classes };
+}
+
+/* ============================================================
+   СЛОВАРЬ: загрузка внешних файлов (рядом с index.html)
+============================================================ */
+const DICT_URLS = { strict: './dict-strict.txt.gz', free: './dict-free.txt.gz' };
+
+let DICTS = { strict: null, free: null };
+let activeDict = 'strict';
+let dictReady = false;
+let refreshRackButton = ()=>{};
+let freeLoadingPromise = null;
+
+function currentSet(){ return DICTS[activeDict]; }
+
+async function fetchAndDecode(url){
+  const resp = await fetch(url, { cache: 'force-cache' });
+  if (!resp.ok || !resp.body) throw new Error('Не удалось получить ' + url + ' (HTTP ' + resp.status + ')');
+
+  const stream = resp.body.pipeThrough(new DecompressionStream('gzip'));
+  const text = await new Response(stream).text();
+  const lines = text.split('\n');
+
+  const words = new Array(lines.length);
+  let prev = '';
+  for (let i=0;i<lines.length;i++){
+    const line = lines[i];
+    const p = line.charCodeAt(0) - 48;
+    const w = prev.slice(0,p) + line.slice(1);
+    words[i] = w;
+    prev = w;
+  }
+
+  const byLen = [];
+  for (let i=0;i<=MAX_LEN;i++) byLen.push([]);
+  for (let i=0;i<words.length;i++){
+    const len = words[i].length;
+    if (len>=1 && len<=MAX_LEN) byLen[len].push(words[i]);
+  }
+  return { all: words, byLen: byLen };
+}
+
+function ensureFreeDict(){
+  if (DICTS.free) return Promise.resolve(DICTS.free);
+  if (!freeLoadingPromise){
+    freeLoadingPromise = fetchAndDecode(DICT_URLS.free).then(d => { DICTS.free = d; return d; });
+  }
+  return freeLoadingPromise;
+}
+
+/* ============================================================
+   ПОИСК
+============================================================ */
+const RANGE_CACHE = [];
+for (let i=0;i<=MAX_LEN;i++){ const a=[]; for(let j=0;j<i;j++) a.push(j); RANGE_CACHE.push(a); }
+
+function buildResult(word, wildcardPositions, rackInfo, totalHandTiles){
+  const classes = new Array(word.length).fill('fixed');
+  if (wildcardPositions.length === 0){
+    return { word, score: faceScore(word), bingo:false, classes };
+  }
+  let neededStr = '';
+  for (let i=0;i<wildcardPositions.length;i++) neededStr += word[wildcardPositions[i]];
+
+  if (!rackInfo){
+    for (let i=0;i<wildcardPositions.length;i++) classes[wildcardPositions[i]] = 'real';
+    return { word, score: faceScore(word), bingo:false, classes };
+  }
+
+  const evalRes = evalNeeded(neededStr, rackInfo);
+  if (!evalRes) return null;
+
+  const fixedScore = faceScore(word) - faceScore(neededStr);
+  let finalScore = fixedScore + evalRes.score;
+  for (let k=0;k<wildcardPositions.length;k++) classes[wildcardPositions[k]] = evalRes.classes[k];
+
+  const bingo = rackInfo.mode==='count' && totalHandTiles>0 && neededStr.length === totalHandTiles;
+  if (bingo) finalScore += 15;
+  return { word, score: finalScore, bingo, classes };
+}
+
+function computeBoardScore(word, classes, bingo, r0, c0, dr, dc){
+  const cells = [];
+  for (let i=0;i<word.length;i++){
+    const r = r0 + dr*i, c = c0 + dc*i;
+    if (r<0||c<0||r>=BOARD_SIZE||c>=BOARD_SIZE) return { fits:false };
+    cells.push({r, c, info: cellAt(r,c)});
+  }
+  let rawSum = 0;
+  let wordMult = 1;
+  const isNew = (cls)=> cls !== 'fixed';
+  for (let i=0;i<word.length;i++){
+    const cls = classes[i];
+    const base = (cls === 'joker') ? 0 : pointOf(word[i]);
+    const info = cells[i].info;
+    let letterFactor = 1;
+    if (info && isNew(cls)){
+      if (info.kind === 'letter') letterFactor = info.factor;
+      if (info.kind === 'word') wordMult *= info.factor;
+    }
+    rawSum += base * letterFactor;
+  }
+  const total = rawSum * wordMult + (bingo ? 15 : 0);
+  return { fits:true, cells, rawSum, wordMult, total };
+}
+
+function buildRackInfo(handStr, allowRepeat){
+  if (!handStr) return { rackInfo:null, total:0 };
+  if (allowRepeat){
+    const clean = [...handStr].filter(c => c!=='?' && c!=='*' && LETTER_TO_IDX.has(c));
+    const allowedSet = new Set(clean);
+    if (allowedSet.size===0) return { rackInfo:null, total:0 };
+    return { rackInfo:{ mode:'set', allowedSet }, total:0 };
+  }
+  const {counts, jokers} = lettersToRack(handStr);
+  let total = jokers;
+  for (let i=0;i<ALPHA_SIZE;i++) total += counts[i];
+  if (total===0) return { rackInfo:null, total:0 };
+  return { rackInfo:{ mode:'count', counts, jokers }, total };
+}
+
+function search(handStr, maskStr, allowRepeat, dataset){
+  const results = [];
+  const { rackInfo, total: totalHandTiles } = buildRackInfo(handStr, allowRepeat);
+  const hasMask = maskStr.length > 0;
+
+  if (!hasMask){
+    if (!rackInfo) return results;
+    if (rackInfo.mode === 'set'){
+      const all = dataset.all;
+      for (let i=0;i<all.length;i++){
+        const w = all[i];
+        const r = buildResult(w, RANGE_CACHE[w.length] || [], rackInfo, 0);
+        if (r) results.push(r);
+      }
+    } else {
+      const maxLen = Math.min(totalHandTiles, MAX_LEN);
+      for (let len=1; len<=maxLen; len++){
+        const bucket = dataset.byLen[len];
+        if (!bucket) continue;
+        for (let j=0;j<bucket.length;j++){
+          const w = bucket[j];
+          const r = buildResult(w, RANGE_CACHE[len], rackInfo, totalHandTiles);
+          if (r) results.push(r);
+        }
+      }
+    }
+    return results;
+  }
+
+  if (!maskStr.includes('*')){
+    const len = maskStr.length;
+    const bucket = dataset.byLen[len] || [];
+    const wildcardIdx = [];
+    for (let i=0;i<len;i++) if (maskStr[i]==='?') wildcardIdx.push(i);
+    for (let j=0;j<bucket.length;j++){
+      const w = bucket[j];
+      let ok = true;
+      for (let i=0;i<len;i++){
+        if (maskStr[i] !== '?' && maskStr[i] !== w[i]){ ok=false; break; }
+      }
+      if (!ok) continue;
+      const r = buildResult(w, wildcardIdx, rackInfo, totalHandTiles);
+      if (r) results.push(r);
+    }
+    return results;
+  }
+
+  const starCount = (maskStr.match(/\*/g) || []).length;
+
+  if (starCount === 1 && maskStr.indexOf('?') === -1){
+    const starAt = maskStr.indexOf('*');
+    const prefix = maskStr.slice(0, starAt);
+    const suffix = maskStr.slice(starAt+1);
+    const minLen = prefix.length + suffix.length;
+    for (let len=minLen; len<=MAX_LEN; len++){
+      const bucket = dataset.byLen[len];
+      if (!bucket) continue;
+      for (let j=0;j<bucket.length;j++){
+        const w = bucket[j];
+        if (prefix && !w.startsWith(prefix)) continue;
+        if (suffix && !w.endsWith(suffix)) continue;
+        const wildcardIdx = [];
+        for (let p=prefix.length; p<len-suffix.length; p++) wildcardIdx.push(p);
+        const r = buildResult(w, wildcardIdx, rackInfo, totalHandTiles);
+        if (r) results.push(r);
+      }
+    }
+    return results;
+  }
+
+  let pat = '^';
+  let minLen = 0;
+  for (const ch of maskStr){
+    if (ch === '?'){ pat += '(.)'; minLen += 1; }
+    else if (ch === '*'){ pat += '(.*)'; }
+    else { pat += ch; minLen += 1; }
+  }
+  pat += '$';
+  const re = new RegExp(pat, 'd');
+  for (let len=minLen; len<=MAX_LEN; len++){
+    const bucket = dataset.byLen[len];
+    if (!bucket) continue;
+    for (let j=0;j<bucket.length;j++){
+      const w = bucket[j];
+      const m = re.exec(w);
+      if (!m) continue;
+      const wildcardIdx = [];
+      for (let gi=1; gi<m.indices.length; gi++){
+        const span = m.indices[gi];
+        if (!span) continue;
+        for (let p=span[0]; p<span[1]; p++) wildcardIdx.push(p);
+      }
+      const r = buildResult(w, wildcardIdx, rackInfo, totalHandTiles);
+      if (r) results.push(r);
+    }
+  }
+  return results;
+}
+
+/* ============================================================
+   КАРТА ИГРЫ: состояние доски, история ходов, подбор лучшего хода
+============================================================ */
+function makeEmptyBoard(){
+  const b = [];
+  for (let r=0;r<BOARD_SIZE;r++) b.push(new Array(BOARD_SIZE).fill(null));
+  return b;
+}
+let BOARD_STATE = makeEmptyBoard();
+let MOVES = [];
+let moveSeq = 1;
+
+function boardIsEmpty(){
+  for (let r=0;r<BOARD_SIZE;r++) for (let c=0;c<BOARD_SIZE;c++) if (BOARD_STATE[r][c]) return false;
+  return true;
+}
+
+function bucketHas(dataset, word){
+  const arr = dataset.byLen[word.length];
+  if (!arr || !arr.length) return false;
+  let lo=0, hi=arr.length-1;
+  while (lo<=hi){
+    const mid=(lo+hi)>>1;
+    if (arr[mid]===word) return true;
+    if (arr[mid]<word) lo=mid+1; else hi=mid-1;
+  }
+  return false;
+}
+
+function crossCheck(r, c, dr, dc, letter, dataset){
+  const pdr = dc, pdc = dr;
+  let pr = r-pdr, pc = c-pdc, prefix = '';
+  while (pr>=0 && pc>=0 && pr<BOARD_SIZE && pc<BOARD_SIZE && BOARD_STATE[pr][pc]){
+    prefix = BOARD_STATE[pr][pc].letter + prefix;
+    pr-=pdr; pc-=pdc;
+  }
+  pr = r+pdr; pc = c+pdc;
+  let suffix = '';
+  while (pr>=0 && pc>=0 && pr<BOARD_SIZE && pc<BOARD_SIZE && BOARD_STATE[pr][pc]){
+    suffix += BOARD_STATE[pr][pc].letter;
+    pr+=pdr; pc+=pdc;
+  }
+  if (!prefix && !suffix) return true;
+  return bucketHas(dataset, prefix + letter + suffix);
+}
+
+function computeAnchors(){
+  if (boardIsEmpty()) return [{r:7,c:7}];
+  const anchors = [];
+  for (let r=0;r<BOARD_SIZE;r++){
+    for (let c=0;c<BOARD_SIZE;c++){
+      if (BOARD_STATE[r][c]) continue;
+      const up = r>0 && BOARD_STATE[r-1][c];
+      const down = r<BOARD_SIZE-1 && BOARD_STATE[r+1][c];
+      const left = c>0 && BOARD_STATE[r][c-1];
+      const right = c<BOARD_SIZE-1 && BOARD_STATE[r][c+1];
+      if (up||down||left||right) anchors.push({r,c});
+    }
+  }
+  return anchors;
+}
+
+function generateMoves(handStr, dataset, opts){
+  opts = opts || {};
+  const cap = opts.cap || 3000;
+  const { rackInfo, total: totalHandTiles } = buildRackInfo(handStr, false);
+  if (!rackInfo) return [];
+
+  const anchors = computeAnchors();
+  const seen = new Set();
+  const out = [];
+
+  outer:
+  for (const a of anchors){
+    for (const dir of ['h','v']){
+      const dr = dir==='v' ? 1 : 0;
+      const dc = dir==='v' ? 0 : 1;
+      const apos = dir==='v' ? a.r : a.c;
+      const fixedAxis = dir==='v' ? a.c : a.r;
+
+      for (let start=Math.max(0, apos-MAX_LEN+1); start<=apos; start++){
+        if (start>0){
+          const br = dir==='v' ? start-1 : fixedAxis;
+          const bc = dir==='v' ? fixedAxis : start-1;
+          if (BOARD_STATE[br][bc]) continue;
+        }
+        for (let end=apos; end<Math.min(BOARD_SIZE, start+MAX_LEN); end++){
+          const len = end-start+1;
+          if (end<BOARD_SIZE-1){
+            const ar2 = dir==='v' ? end+1 : fixedAxis;
+            const ac2 = dir==='v' ? fixedAxis : end+1;
+            if (BOARD_STATE[ar2][ac2]) continue;
+          }
+          let mask = '', emptyCount = 0;
+          for (let p=start;p<=end;p++){
+            const rr = dir==='v' ? p : fixedAxis;
+            const cc = dir==='v' ? fixedAxis : p;
+            const cell = BOARD_STATE[rr][cc];
+            if (cell){ mask += cell.letter; } else { mask += '?'; emptyCount++; }
+          }
+          if (emptyCount===0 || emptyCount>totalHandTiles) continue;
+
+          const r0 = dir==='v' ? start : fixedAxis;
+          const c0 = dir==='v' ? fixedAxis : start;
+          const key = r0+','+c0+','+dir+','+len;
+          if (seen.has(key)) continue;
+          seen.add(key);
+
+          const wildcardIdx = [];
+          for (let i=0;i<len;i++) if (mask[i]==='?') wildcardIdx.push(i);
+
+          const bucket = dataset.byLen[len];
+          if (!bucket || !bucket.length) continue;
+          for (let j=0;j<bucket.length;j++){
+            const w = bucket[j];
+            let ok = true;
+            for (let i=0;i<len;i++){
+              if (mask[i]!=='?' && mask[i]!==w[i]){ ok=false; break; }
+            }
+            if (!ok) continue;
+            const built = buildResult(w, wildcardIdx, rackInfo, totalHandTiles);
+            if (!built) continue;
+
+            let crossOk = true;
+            for (let i=0;i<len;i++){
+              if (built.classes[i]==='fixed') continue;
+              const rr = r0+dr*i, cc = c0+dc*i;
+              if (!crossCheck(rr, cc, dr, dc, w[i], dataset)){ crossOk=false; break; }
+            }
+            if (!crossOk) continue;
+
+            const boardRes = computeBoardScore(w, built.classes, built.bingo, r0, c0, dr, dc);
+            if (!boardRes.fits) continue;
+
+            out.push({ word:w, r0, c0, dr, dc, dir, classes: built.classes, bingo: built.bingo,
+              total: boardRes.total, rawSum: boardRes.rawSum, wordMult: boardRes.wordMult });
+            if (out.length>=cap) continue outer;
+          }
+        }
+      }
+    }
+  }
+
+  out.sort((a,b)=>b.total-a.total);
+  return out;
+}
+
+function reconcileClasses(word, originalClasses, r0, c0, dr, dc){
+  const len = word.length;
+  const finalClasses = new Array(len);
+  for (let i=0;i<len;i++){
+    const r = r0+dr*i, c = c0+dc*i;
+    if (r<0||c<0||r>=BOARD_SIZE||c>=BOARD_SIZE) return { fits:false };
+    const cell = BOARD_STATE[r][c];
+    if (cell){
+      if (cell.letter !== word[i]) return { fits:false, conflictAt:i };
+      finalClasses[i] = 'fixed';
+    } else {
+      finalClasses[i] = (originalClasses && originalClasses[i] !== 'fixed') ? originalClasses[i] : 'real';
+    }
+  }
+  return { fits:true, classes:finalClasses };
+}
+
+function commitMove(word, r0, c0, dr, dc, classes, bingo, who){
+  const len = word.length;
+  const newCells = [];
+  for (let i=0;i<len;i++){
+    const r = r0+dr*i, c = c0+dc*i;
+    if (!BOARD_STATE[r][c]){
+      BOARD_STATE[r][c] = { letter: word[i] };
+      newCells.push({r,c});
+    }
+  }
+  const boardRes = computeBoardScore(word, classes, bingo, r0, c0, dr, dc);
+  const move = { id: moveSeq++, word, r0, c0, dr, dc, who, score: boardRes.fits ? boardRes.total : 0, newCells };
+  MOVES.push(move);
+  return move;
+}
+
+function undoLastMove(){
+  const m = MOVES.pop();
+  if (!m) return null;
+  for (const {r,c} of m.newCells) BOARD_STATE[r][c] = null;
+  return m;
+}
+
+function clearGame(){
+  BOARD_STATE = makeEmptyBoard();
+  MOVES = [];
+}
+
+/* ============================================================
+   UI: фишки / превью / клавиатура
+============================================================ */
+function tileEl(letter, opts){
+  opts = opts || {};
+  const d = document.createElement('div');
+  d.className = 'tile' + (letter==='?' || letter==='*' ? ' joker' : '');
+  d.style.width = (opts.size||'2.4rem'); d.style.height = (opts.size||'2.4rem');
+  d.style.fontSize = opts.fontSize || '1.05rem';
+  const letterSpan = document.createTextNode((letter==='?'||letter==='*') ? '★' : letter);
+  d.appendChild(letterSpan);
+  if (letter !== '?' && letter !== '*'){
+    const pt = document.createElement('span');
+    pt.className = 'pt';
+    pt.style.fontSize = opts.ptSize || '.55rem';
+    pt.textContent = pointOf(letter);
+    d.appendChild(pt);
+  }
+  return d;
+}
+
+function maskTileEl(ch){
+  if (ch === '?' || ch === '*'){
+    const d = document.createElement('div');
+    d.className = 'tile ghost';
+    d.style.width = '2.4rem'; d.style.height = '2.4rem'; d.style.fontSize = '1.05rem';
+    d.textContent = ch === '?' ? '?' : '∗';
+    return d;
+  }
+  return tileEl(ch);
+}
+
+function resultTileEl(letter, cls){
+  const d = document.createElement('div');
+  d.className = 'tile' + (cls==='joker' ? ' joker' : cls==='fixed' ? ' fixed' : '');
+  d.style.width='1.9rem'; d.style.height='1.9rem'; d.style.fontSize='.85rem';
+  if (cls === 'joker'){
+    const badge = document.createElement('span');
+    badge.className = 'badge-star'; badge.textContent = '★';
+    d.appendChild(badge);
+  }
+  d.appendChild(document.createTextNode(letter));
+  const pt = document.createElement('span');
+  pt.className = 'pt'; pt.style.fontSize = '.46rem';
+  pt.textContent = cls==='joker' ? '0' : pointOf(letter);
+  d.appendChild(pt);
+  return d;
+}
+
+function renderPreview(container, value, isMask){
+  container.innerHTML = '';
+  for (const ch of value){
+    container.appendChild(isMask ? maskTileEl(ch) : tileEl(ch));
+  }
+}
+
+function buildLetterPad(padEl, onLetter, withWildcards){
+  padEl.innerHTML = '';
+  for (const ch of LETTER_ORDER){
+    const b = document.createElement('button');
+    b.className = 'pad-key'; b.type='button'; b.textContent = ch;
+    b.addEventListener('click', ()=>onLetter(ch));
+    padEl.appendChild(b);
+  }
+  if (withWildcards){
+    const q = document.createElement('button');
+    q.className = 'pad-key wild'; q.type='button'; q.textContent = '?';
+    q.title = 'ровно одна неизвестная буква';
+    q.addEventListener('click', ()=>onLetter('?'));
+    padEl.appendChild(q);
+    const star = document.createElement('button');
+    star.className = 'pad-key wild'; star.type='button'; star.textContent = '∗';
+    star.title = 'любое количество букв';
+    star.addEventListener('click', ()=>onLetter('*'));
+    padEl.appendChild(star);
+  } else {
+    const joker = document.createElement('button');
+    joker.className = 'pad-key joker'; joker.type='button'; joker.textContent = '★';
+    joker.title = 'джокер (пустая фишка)';
+    joker.addEventListener('click', ()=>onLetter('*'));
+    padEl.appendChild(joker);
+  }
+}
+
+/* ============================================================
+   Результаты: сортировка / отрисовка / пагинация
+============================================================ */
+function sortResults(arr, mode){
+  const a = arr.slice();
+  switch(mode){
+    case 'score-desc': a.sort((x,y)=> y.score-x.score || x.word.length-y.word.length); break;
+    case 'score-asc': a.sort((x,y)=> x.score-y.score || x.word.length-y.word.length); break;
+    case 'len-desc': a.sort((x,y)=> y.word.length-x.word.length || y.score-x.score); break;
+    case 'len-asc': a.sort((x,y)=> x.word.length-y.word.length || y.score-x.score); break;
+    case 'alpha': a.sort((x,y)=> x.word.localeCompare(y.word,'ru')); break;
+    case 'random': for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } break;
+  }
+  return a;
+}
+
+function makeResultRow(item, onPlace){
+  const row = document.createElement('div');
+  row.className = 'result-row';
+  const tiles = document.createElement('div');
+  tiles.className = 'tiles';
+  for (let i=0;i<item.word.length;i++){
+    const cls = item.classes ? item.classes[i] : 'real';
+    tiles.appendChild(resultTileEl(item.word[i], cls));
+  }
+  row.appendChild(tiles);
+
+  const meta = document.createElement('div');
+  meta.className = 'result-meta';
+  const len = document.createElement('span'); len.className='badge len'; len.textContent = item.word.length + ' букв';
+  meta.appendChild(len);
+  if (item.bingo){
+    const b = document.createElement('span'); b.className='badge bingo'; b.textContent = 'все фишки +15';
+    meta.appendChild(b);
+  }
+  const sc = document.createElement('span'); sc.className='badge score'; sc.textContent = item.score + ' очк.';
+  meta.appendChild(sc);
+  const goBtn = document.createElement('button');
+  goBtn.className = 'go-board-btn'; goBtn.type = 'button'; goBtn.textContent = 'на доску';
+  goBtn.addEventListener('click', ()=>onPlace(item));
+  meta.appendChild(goBtn);
+  row.appendChild(meta);
+  return row;
+}
+
+function makeResultsController(ids, onPlace){
+  const card = document.getElementById(ids.card);
+  const list = document.getElementById(ids.list);
+  const countEl = document.getElementById(ids.count);
+  const sortEl = document.getElementById(ids.sort);
+  const moreBtn = document.getElementById(ids.more);
+  const caption = document.getElementById(ids.caption);
+  const PAGE = 120;
+  let full = [];
+  let shown = 0;
+
+  function renderPage(){
+    const sorted = sortResults(full, sortEl.value);
+    list.innerHTML = '';
+    const upto = Math.min(shown, sorted.length);
+    for (let i=0;i<upto;i++) list.appendChild(makeResultRow(sorted[i], onPlace));
+    moreBtn.hidden = upto >= sorted.length;
+  }
+
+  sortEl.addEventListener('change', ()=>{ renderPage(); });
+  moreBtn.addEventListener('click', ()=>{ shown += PAGE; renderPage(); });
+
+  return {
+    show(results, emptyMessage){
+      card.hidden = false;
+      full = results;
+      shown = PAGE;
+      if (results.length === 0){
+        list.innerHTML = '<div class="empty-state">' + emptyMessage + '</div>';
+        countEl.innerHTML = 'Найдено <b>0</b> слов';
+        moreBtn.hidden = true;
+        caption.hidden = true;
+        return;
+      }
+      const hasFixed = results.some(r => r.classes && r.classes.includes('fixed'));
+      const hasJoker = results.some(r => r.classes && r.classes.includes('joker'));
+      if (hasFixed || hasJoker){
+        const parts = [];
+        if (hasFixed) parts.push('пунктир — уже на доске');
+        parts.push('обычная плитка — ставите сами');
+        if (hasJoker) parts.push('золотая — джокер (0 очков)');
+        caption.textContent = parts.join(' · ');
+        caption.hidden = false;
+      } else {
+        caption.hidden = true;
+      }
+      countEl.innerHTML = 'Найдено <b>' + results.length.toLocaleString('ru') + '</b> слов';
+      renderPage();
+    }
+  };
+}
+
+/* ============================================================
+   Инициализация UI
+============================================================ */
+function initSearch(){
+  const handInput = document.getElementById('hand-input');
+  const handPreview = document.getElementById('hand-preview');
+  const handPad = document.getElementById('hand-pad');
+  const handClear = document.getElementById('hand-clear');
+
+  const maskInput = document.getElementById('mask-input');
+  const maskPreview = document.getElementById('mask-preview');
+  const maskPad = document.getElementById('mask-pad');
+  const maskClear = document.getElementById('mask-clear');
+
+  const repeatChk = document.getElementById('repeat-toggle');
+  const searchBtn = document.getElementById('search-btn');
+
+  function syncButton(){
+    searchBtn.disabled = !dictReady || (handInput.value.length===0 && maskInput.value.length===0);
+  }
+  refreshRackButton = syncButton;
+
+  function syncHand(){
+    handInput.value = sanitizeRackChars(handInput.value);
+    renderPreview(handPreview, handInput.value, false);
+    syncButton();
+  }
+  function syncMask(){
+    maskInput.value = sanitizeMaskChars(maskInput.value);
+    renderPreview(maskPreview, maskInput.value, true);
+    syncButton();
+  }
+
+  handInput.addEventListener('input', syncHand);
+  maskInput.addEventListener('input', syncMask);
+
+  buildLetterPad(handPad, (ch)=>{
+    if (handInput.value.length>=15) return;
+    handInput.value += ch;
+    syncHand();
+    handInput.focus();
+  }, false);
+
+  buildLetterPad(maskPad, (ch)=>{
+    if (maskInput.value.length>=15) return;
+    maskInput.value += ch;
+    syncMask();
+    maskInput.focus();
+  }, true);
+
+  handClear.addEventListener('click', ()=>{ handInput.value=''; syncHand(); handInput.focus(); });
+  maskClear.addEventListener('click', ()=>{ maskInput.value=''; syncMask(); maskInput.focus(); });
+
+  const results = makeResultsController(
+    {card:'results-card', list:'results-list', count:'results-count', sort:'results-sort', more:'results-more', caption:'results-caption'},
+    (item)=>{ placeOnBoard(item); }
+  );
+
+  searchBtn.addEventListener('click', ()=>{
+    if (!handInput.value && !maskInput.value) return;
+    const res = search(handInput.value, maskInput.value, repeatChk.checked, currentSet());
+    results.show(res, 'Ничего не нашлось. Попробуйте другие буквы, добавьте джокер «*» или ослабьте маску.');
+  });
+
+  syncHand();
+  syncMask();
+}
+
+/* ============================================================
+   ДОСКА И КАРТА ИГРЫ
+============================================================ */
+let placeOnBoard = ()=>{};
+
+function currentHandTotal(){
+  const handVal = sanitizeRackChars(document.getElementById('hand-input').value);
+  const repeatChk = document.getElementById('repeat-toggle');
+  if (repeatChk && repeatChk.checked) return 0;
+  return buildRackInfo(handVal, false).total;
+}
+
+function initBoard(){
+  const gridEl = document.getElementById('board-grid');
+  const orientH = document.getElementById('orient-h');
+  const orientV = document.getElementById('orient-v');
+  const pendingEmptyEl = document.getElementById('pending-empty');
+  const pendingWrapEl = document.getElementById('pending-wrap');
+  const tilesEl = document.getElementById('pending-tiles');
+  const warnEl = document.getElementById('board-warn');
+  const breakdownEl = document.getElementById('board-breakdown');
+  const whoMe = document.getElementById('who-me');
+  const whoOpp = document.getElementById('who-opp');
+  const confirmBtn = document.getElementById('confirm-move');
+  const cancelBtn = document.getElementById('cancel-move');
+  const manualInput = document.getElementById('manual-word-input');
+  const manualGo = document.getElementById('manual-go');
+  const suggestBtn = document.getElementById('suggest-btn');
+  const suggestStatus = document.getElementById('suggest-status');
+  const suggestList = document.getElementById('suggest-list');
+  const histEl = document.getElementById('move-history');
+  const clearBtn = document.getElementById('game-clear');
+
+  let pending = null;   // {word, classes, bingo, who, totalHandTiles, finalClasses, finalBingo}
+  let orient = 'h';
+  let start = null;
+
+  function buildGrid(){
+    gridEl.innerHTML = '';
+    for (let r=0;r<BOARD_SIZE;r++){
+      for (let c=0;c<BOARD_SIZE;c++){
+        const cell = document.createElement('div');
+        cell.className = 'board-cell';
+        const info = cellAt(r,c);
+        if (info) cell.classList.add(info.cls);
+        cell.addEventListener('click', ()=>{
+          if (!pending) return;
+          start = {r,c};
+          recomputePreview();
+        });
+        gridEl.appendChild(cell);
+      }
+    }
+  }
+  buildGrid();
+
+  function syncOrientButtons(){
+    orientH.setAttribute('aria-pressed', String(orient==='h'));
+    orientV.setAttribute('aria-pressed', String(orient==='v'));
+  }
+  function syncWhoButtons(){
+    whoMe.setAttribute('aria-pressed', String(!pending || pending.who==='me'));
+    whoOpp.setAttribute('aria-pressed', String(!!pending && pending.who==='opp'));
+  }
+
+  function renderBoard(){
+    Array.from(gridEl.children).forEach((cell,idx)=>{
+      const r = Math.floor(idx/BOARD_SIZE), c = idx%BOARD_SIZE;
+      cell.classList.remove('filled','who-me','who-opp');
+      cell.querySelectorAll('.fl').forEach(n=>n.remove());
+      const occ = BOARD_STATE[r][c];
+      if (occ){
+        cell.classList.add('filled');
+        const owner = MOVES.find(m=>m.newCells.some(nc=>nc.r===r&&nc.c===c));
+        if (owner) cell.classList.add(owner.who==='me' ? 'who-me' : 'who-opp');
+        const fl = document.createElement('span'); fl.className='fl'; fl.textContent = occ.letter;
+        cell.appendChild(fl);
+      }
+    });
+  }
+
+  function renderHistory(){
+    histEl.innerHTML = '';
+    let scoreMe=0, scoreOpp=0;
+    MOVES.forEach((m,idx)=>{
+      if (m.who==='me') scoreMe+=m.score; else scoreOpp+=m.score;
+      const row = document.createElement('div');
+      row.className = 'mh-row';
+      const dot = document.createElement('span'); dot.className='mh-who '+(m.who==='me'?'me':'opp'); row.appendChild(dot);
+      const w = document.createElement('span'); w.className='mh-word'; w.textContent=m.word; row.appendChild(w);
+      const pos = document.createElement('span'); pos.className='mh-pos'; pos.textContent=(m.r0+1)+','+(m.c0+1)+' '+(m.dr?'↓':'→'); row.appendChild(pos);
+      const sc = document.createElement('span'); sc.className='mh-score'; sc.textContent=m.score; row.appendChild(sc);
+      if (idx === MOVES.length-1){
+        const undo = document.createElement('button'); undo.className='mh-undo'; undo.type='button'; undo.textContent='↩'; undo.title='Отменить этот ход';
+        undo.addEventListener('click', ()=>{ undoLastMove(); renderBoard(); renderHistory(); });
+        row.appendChild(undo);
+      }
+      histEl.appendChild(row);
+    });
+    document.getElementById('score-me').textContent = scoreMe;
+    document.getElementById('score-opp').textContent = scoreOpp;
+  }
+
+  function clearOverlay(){
+    Array.from(gridEl.children).forEach(cell=>{
+      cell.classList.remove('start','path','used');
+      cell.querySelectorAll('.pl').forEach(n=>n.remove());
+    });
+  }
+
+  function renderPendingTiles(classes){
+    tilesEl.innerHTML = '';
+    for (let i=0;i<pending.word.length;i++) tilesEl.appendChild(resultTileEl(pending.word[i], classes[i]));
+  }
+
+  function recomputePreview(){
+    clearOverlay();
+    if (!pending) return;
+    pending.finalClasses = null;
+    pending.finalBingo = false;
+    renderPendingTiles(pending.classes);
+    if (!start){
+      warnEl.hidden = true;
+      breakdownEl.innerHTML = 'Нажмите клетку на доске — туда встанет первая буква слова.';
+      return;
+    }
+    const dr = orient==='v' ? 1 : 0;
+    const dc = orient==='v' ? 0 : 1;
+    const rec = reconcileClasses(pending.word, pending.classes, start.r, start.c, dr, dc);
+    if (!rec.fits){
+      warnEl.hidden = false;
+      warnEl.textContent = (rec.conflictAt!==undefined)
+        ? 'Буква «'+pending.word[rec.conflictAt].toUpperCase()+'» не совпадает с тем, что уже стоит на доске здесь.'
+        : 'Слово не помещается на доску в этом направлении от выбранной клетки.';
+      breakdownEl.innerHTML = '';
+      return;
+    }
+    warnEl.hidden = true;
+    renderPendingTiles(rec.classes);
+
+    let bingo = false;
+    if (pending.totalHandTiles>0){
+      const nonFixed = rec.classes.filter(c=>c!=='fixed').length;
+      bingo = nonFixed === pending.totalHandTiles;
+    }
+    const boardRes = computeBoardScore(pending.word, rec.classes, bingo, start.r, start.c, dr, dc);
+    pending.finalClasses = rec.classes;
+    pending.finalBingo = bingo;
+
+    boardRes.cells.forEach((cellPos,i)=>{
+      const idx = cellPos.r*BOARD_SIZE+cellPos.c;
+      const el = gridEl.children[idx];
+      el.classList.add('path');
+      if (rec.classes[i]==='fixed') el.classList.add('used');
+      const pl=document.createElement('span'); pl.className='pl'; pl.textContent=pending.word[i];
+      el.appendChild(pl);
+    });
+    gridEl.children[start.r*BOARD_SIZE+start.c].classList.add('start');
+
+    const multBits=[];
+    boardRes.cells.forEach((cellPos,i)=>{
+      if (cellPos.info && cellPos.info.kind!=='center' && rec.classes[i]!=='fixed'){
+        multBits.push(pending.word[i].toUpperCase()+' ×'+cellPos.info.factor+' ('+(cellPos.info.kind==='letter'?'буква':'слово')+')');
+      }
+    });
+    breakdownEl.innerHTML =
+      'Буквы с множителем: <b>'+(multBits.length?multBits.join(', '):'нет')+'</b><br>'+
+      'Сумма букв (с учётом умножения букв): <b>'+boardRes.rawSum+'</b><br>'+
+      'Множитель слова: <b>×'+boardRes.wordMult+'</b>'+
+      (bingo?'<br>Бонус за все фишки: <b>+15</b>':'')+
+      '<br><span class="final">'+boardRes.total+' очков</span>';
+  }
+
+  function showPending(word, classes, bingo, who, preset, totalHandTiles){
+    pending = { word, classes, bingo, who, totalHandTiles: totalHandTiles||0 };
+    if (preset){ start = {r:preset.r0, c:preset.c0}; orient = preset.dr ? 'v' : 'h'; }
+    else start = null;
+    syncOrientButtons();
+    syncWhoButtons();
+    pendingEmptyEl.hidden = true;
+    pendingWrapEl.hidden = false;
+    recomputePreview();
+    gridEl.scrollIntoView({behavior:'smooth', block:'center'});
+  }
+
+  function clearPending(){
+    pending = null; start = null;
+    clearOverlay();
+    pendingEmptyEl.hidden = false;
+    pendingWrapEl.hidden = true;
+  }
+
+  orientH.addEventListener('click', ()=>{ orient='h'; syncOrientButtons(); recomputePreview(); });
+  orientV.addEventListener('click', ()=>{ orient='v'; syncOrientButtons(); recomputePreview(); });
+  whoMe.addEventListener('click', ()=>{ if(pending) pending.who='me'; syncWhoButtons(); });
+  whoOpp.addEventListener('click', ()=>{ if(pending) pending.who='opp'; syncWhoButtons(); });
+
+  confirmBtn.addEventListener('click', ()=>{
+    if (!pending || !start || !pending.finalClasses) return;
+    const dr = orient==='v'?1:0, dc=orient==='v'?0:1;
+    commitMove(pending.word, start.r, start.c, dr, dc, pending.finalClasses, pending.finalBingo, pending.who);
+    clearPending();
+    renderBoard();
+    renderHistory();
+  });
+  cancelBtn.addEventListener('click', clearPending);
+
+  clearBtn.addEventListener('click', ()=>{
+    if (!MOVES.length || confirm('Очистить всю карту партии? Это нельзя отменить.')){
+      clearGame();
+      clearPending();
+      renderBoard();
+      renderHistory();
+    }
+  });
+
+  manualGo.addEventListener('click', ()=>{
+    const raw = manualInput.value.toLowerCase().replace(/ё/g,'е').replace(/[^а-я]/g,'').slice(0,15);
+    if (!raw) return;
+    const classes = raw.split('').map(()=>'real');
+    showPending(raw, classes, false, 'opp', null, 0);
+  });
+
+  function makeSuggestRow(mv){
+    const row = document.createElement('div');
+    row.className = 'result-row';
+    const tiles = document.createElement('div'); tiles.className='tiles';
+    for (let i=0;i<mv.word.length;i++) tiles.appendChild(resultTileEl(mv.word[i], mv.classes[i]));
+    row.appendChild(tiles);
+    const meta = document.createElement('div'); meta.className='result-meta';
+    const pos = document.createElement('span'); pos.className='suggest-row-meta';
+    pos.textContent = (mv.r0+1)+','+(mv.c0+1)+' '+(mv.dr?'↓':'→');
+    meta.appendChild(pos);
+    if (mv.bingo){ const b=document.createElement('span'); b.className='badge bingo'; b.textContent='все фишки +15'; meta.appendChild(b); }
+    const sc=document.createElement('span'); sc.className='badge score'; sc.textContent=mv.total+' очк.'; meta.appendChild(sc);
+    const goBtn=document.createElement('button'); goBtn.className='go-board-btn'; goBtn.type='button'; goBtn.textContent='на доску';
+    goBtn.addEventListener('click', ()=>{
+      showPending(mv.word, mv.classes, mv.bingo, 'me', {r0:mv.r0,c0:mv.c0,dr:mv.dr}, currentHandTotal());
+    });
+    meta.appendChild(goBtn);
+    row.appendChild(meta);
+    return row;
+  }
+
+  suggestBtn.addEventListener('click', ()=>{
+    const handVal = sanitizeRackChars(document.getElementById('hand-input').value);
+    if (!handVal){
+      suggestStatus.textContent = 'Сначала впишите свои фишки в поле «Мои фишки» выше.';
+      suggestList.innerHTML = '';
+      return;
+    }
+    suggestStatus.textContent = 'Считаю варианты…';
+    suggestList.innerHTML = '';
+    suggestBtn.disabled = true;
+    setTimeout(()=>{
+      const t0 = Date.now();
+      const moves = generateMoves(handVal, currentSet());
+      const dt = Date.now()-t0;
+      suggestBtn.disabled = false;
+      if (!moves.length){
+        suggestStatus.textContent = 'Подходящих ходов не нашлось.';
+        return;
+      }
+      suggestStatus.textContent = 'Найдено ' + moves.length.toLocaleString('ru') + ' вариантов (показаны лучшие) · ' + dt + ' мс';
+      moves.slice(0,30).forEach(mv=>suggestList.appendChild(makeSuggestRow(mv)));
+    }, 10);
+  });
+
+  placeOnBoard = (item)=>{
+    showPending(item.word, item.classes, item.bingo, 'me', null, currentHandTotal());
+  };
+
+  renderBoard();
+  renderHistory();
+}
+
+function initLegend(){
+  const grid = document.getElementById('legend-grid');
+  for (const ch of LETTER_ORDER){
+    const info = LETTER_INFO[ch];
+    const cell = document.createElement('div');
+    cell.className = 'legend-cell';
+    cell.innerHTML = '<div class="lg-letter">'+ch+'</div><div class="lg-pt">'+info.p+' очк.</div><div class="lg-ct">× '+info.c+'</div>';
+    grid.appendChild(cell);
+  }
+  const joker = document.createElement('div');
+  joker.className = 'legend-cell';
+  joker.innerHTML = '<div class="lg-letter">★</div><div class="lg-pt">0 очк.</div><div class="lg-ct">× '+JOKER_STOCK+'</div>';
+  grid.appendChild(joker);
+}
+
+function updateDictStat(){
+  const set = currentSet();
+  const label = activeDict === 'strict' ? 'строгий' : 'свободный';
+  document.getElementById('dict-stat').innerHTML = 'словарь: <b>' + set.all.length.toLocaleString('ru') + '</b> слов · ' + label;
+  document.getElementById('dict-explain').textContent = activeDict === 'strict'
+    ? 'Только существительные в именительном падеже единственного числа — по официальным правилам «Эрудита» (и слова без формы единственного числа, например «ножницы»).'
+    : 'Все словоформы: падежи, числа, глаголы, прилагательные и т.д. Удобно для кроссвордов и неформальной игры, но не все слова допустимы по строгим правилам.';
+}
+
+function hideResultCards(){
+  document.getElementById('results-card').hidden = true;
+}
+
+function initDictToggle(){
+  const strictBtn = document.getElementById('dict-strict');
+  const freeBtn = document.getElementById('dict-free');
+  const explainEl = document.getElementById('dict-explain');
+
+  async function set(which){
+    if (which === 'free' && !DICTS.free){
+      freeBtn.disabled = true;
+      explainEl.textContent = 'Загружаем свободный словарь…';
+      try{
+        await ensureFreeDict();
+      } catch(err){
+        explainEl.textContent = 'Не удалось загрузить свободный словарь (dict-free.txt.gz). Проверьте, что файл лежит рядом с index.html.';
+        freeBtn.disabled = false;
+        console.error(err);
+        return;
+      }
+      freeBtn.disabled = false;
+    }
+    activeDict = which;
+    strictBtn.setAttribute('aria-pressed', which==='strict');
+    freeBtn.setAttribute('aria-pressed', which==='free');
+    if (dictReady) updateDictStat();
+    hideResultCards();
+  }
+  strictBtn.addEventListener('click', ()=>set('strict'));
+  freeBtn.addEventListener('click', ()=>set('free'));
+}
+
+async function boot(){
+  initDictToggle();
+  initSearch();
+  initBoard();
+  initLegend();
+
+  const overlay = document.getElementById('loading-overlay');
+  const loadingText = document.getElementById('loading-text');
+  try{
+    DICTS.strict = await fetchAndDecode(DICT_URLS.strict);
+    dictReady = true;
+    updateDictStat();
+    refreshRackButton();
+    overlay.classList.add('hide');
+    setTimeout(()=>overlay.remove(), 400);
+    ensureFreeDict().catch(err => console.error('Фоновая загрузка свободного словаря не удалась:', err));
+  } catch(err){
+    loadingText.innerHTML = 'Не удалось загрузить словарь.<br><br>Проверьте, что файлы <code>dict-strict.txt.gz</code> и <code>dict-free.txt.gz</code> лежат в той же папке, что и эта страница, и что она открыта по http(s) — например, через GitHub Pages, а не как локальный файл (file://).';
+    console.error(err);
+  }
+}
+
+boot();
+</script>
+</body>
+</html>
