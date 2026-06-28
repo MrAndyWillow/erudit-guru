@@ -182,15 +182,16 @@ select.sort-select{
 }
 .result-list{ display:flex; flex-direction:column; }
 .result-row{
-  display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--line-soft);
+  display:flex; flex-direction:column; gap:6px; padding:9px 2px; border-bottom:1px solid var(--line-soft);
   animation: rise .22s ease both;
 }
 @keyframes rise{ from{ opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;} }
 @media (prefers-reduced-motion:reduce){ .result-row{ animation:none; } }
+.result-row .row-top{ display:flex; align-items:center; gap:10px; }
 .result-row .tiles{ display:flex; gap:3px; flex-wrap:wrap; }
 .result-row .tiles .tile{ width:1.9rem; height:1.9rem; font-size:.85rem; border-radius:6px; }
 .result-row .tiles .tile .pt{ font-size:.46rem; }
-.result-meta{ margin-left:auto; display:flex; align-items:center; gap:8px; }
+.result-meta{ margin-left:auto; display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
 .badge{
   font-family:var(--font-mono); font-size:.78rem; font-weight:700; border-radius:999px; padding:3px 9px;
 }
@@ -199,6 +200,7 @@ select.sort-select{
 .badge.bingo{ background: rgba(78,148,131,.18); color:#7BC9B5; }
 .badge.risk{ background: rgba(181,87,63,.2); color:#E08A73; }
 .risk-note{ width:100%; font-size:.74rem; color:var(--ink-faint); margin-top:4px; line-height:1.5; }
+.conn-note{ width:100%; font-size:.74rem; color:var(--jade); margin-top:2px; line-height:1.5; }
 
 .empty-state, .loading-state{
   text-align:center; color:var(--ink-faint); padding:26px 10px; font-size:.9rem; line-height:1.6;
@@ -242,6 +244,13 @@ footer.note{ text-align:center; color:var(--ink-faint); font-size:.76rem; margin
 .bag-tracker summary::-webkit-details-marker{ display:none; }
 .bag-tracker > .hint, .bag-tracker > #bag-grid{ padding:0 14px; }
 .bag-tracker > #bag-grid{ padding-bottom:14px; }
+.burn-row{ display:flex; align-items:center; gap:8px; padding:0 14px 6px; flex-wrap:wrap; }
+.burn-row .hint{ flex:1 1 auto; min-width:140px; }
+#burn-input{
+  width:3rem; text-align:center; text-transform:uppercase; background:var(--panel-3); color:var(--ink);
+  border:1px solid var(--line); border-radius:9px; padding:8px 0; font-family:var(--font-display); font-size:1rem;
+}
+#burn-list{ padding:0 14px 12px; }
 #bag-joker-summary{ font-family:var(--font-mono); color:var(--gold); font-weight:700; margin-left:auto; }
 .legend-cell.scarce{ box-shadow:0 0 0 2px var(--rust); }
 .legend-cell.gone{ opacity:.35; }
@@ -493,6 +502,12 @@ footer.note{ text-align:center; color:var(--ink-faint); font-size:.76rem; margin
       <summary>Буквы, которые еще не видны (мешок + рука соперника) <span id="bag-joker-summary"></span></summary>
       <p class="hint" style="margin:8px 0 10px;">Это буквы за пределами доски и вашей руки — какая-то их часть лежит в мешке, какая-то на руках у соперника (обычно до 7 фишек, но какие именно — неизвестно). Когда какой-то буквы здесь становится 0 — её точно больше нет ни в мешке, ни у соперника.</p>
       <div class="legend-grid" id="bag-grid"></div>
+      <div class="burn-row">
+        <span class="hint" style="margin:0;">Купили джокер взамен буквы — впишите её, она сгорает навсегда:</span>
+        <input type="text" id="burn-input" maxlength="1" inputmode="text" autocapitalize="characters" autocorrect="off" autocomplete="off" spellcheck="false" placeholder="буква">
+        <button class="go-board-btn" id="burn-add" type="button">сжечь</button>
+      </div>
+      <div id="burn-list" class="hint" style="margin:6px 0 0;"></div>
     </details>
 
     <div class="board-grid" id="board-grid"></div>
@@ -534,10 +549,10 @@ footer.note{ text-align:center; color:var(--ink-faint); font-size:.76rem; margin
       <p class="field-label">Подобрать лучший ход</p>
       <p class="hint">Использует поле «мои фишки» выше и текущую карту доски, проверяя все пересечения со словами на доске.</p>
       <button class="primary-btn" id="suggest-btn" type="button">Подобрать лучший ход</button>
+      <button class="more-btn" id="suggest-joker-btn" type="button" hidden>Проверить варианты с докупкой джокеров</button>
       <div id="suggest-status" class="hint" style="margin:10px 0 0;"></div>
+      <div id="suggest-joker-status" class="hint" style="margin:0 0 10px;"></div>
       <div class="result-list" id="suggest-list"></div>
-      <button class="more-btn" id="suggest-joker-btn" type="button" hidden>Проверить вариант с покупкой джокера (+1)</button>
-      <div id="suggest-joker-status" class="hint" style="margin:8px 0 0;"></div>
     </div>
   </section>
 
@@ -923,7 +938,7 @@ function bucketHas(dataset, word){
   return false;
 }
 
-function crossCheck(r, c, dr, dc, letter, dataset){
+function buildCrossWord(r, c, dr, dc, letter){
   const pdr = dc, pdc = dr;
   let pr = r-pdr, pc = c-pdc, prefix = '';
   while (pr>=0 && pc>=0 && pr<BOARD_SIZE && pc<BOARD_SIZE && BOARD_STATE[pr][pc]){
@@ -936,8 +951,14 @@ function crossCheck(r, c, dr, dc, letter, dataset){
     suffix += BOARD_STATE[pr][pc].letter;
     pr+=pdr; pc+=pdc;
   }
-  if (!prefix && !suffix) return true;
-  return bucketHas(dataset, prefix + letter + suffix);
+  if (!prefix && !suffix) return null;
+  return prefix + letter + suffix;
+}
+
+function crossCheck(r, c, dr, dc, letter, dataset){
+  const cw = buildCrossWord(r, c, dr, dc, letter);
+  if (cw === null) return true;
+  return bucketHas(dataset, cw);
 }
 
 function computeAnchors(){
@@ -1142,7 +1163,10 @@ function undoLastMove(){
 function clearGame(){
   BOARD_STATE = makeEmptyBoard();
   MOVES = [];
+  BURNED = {};
 }
+
+let BURNED = {};
 
 function computeBagRemaining(handStr){
   const remaining = {};
@@ -1161,6 +1185,10 @@ function computeBagRemaining(handStr){
   for (const ch of (handStr||'')){
     if (ch === '*') jokersRemaining--;
     else if (remaining[ch] !== undefined) remaining[ch]--;
+  }
+
+  for (const ch in BURNED){
+    if (remaining[ch] !== undefined) remaining[ch] -= BURNED[ch];
   }
 
   return { remaining, jokersRemaining };
@@ -1269,13 +1297,15 @@ function sortResults(arr, mode){
 function makeResultRow(item, onPlace){
   const row = document.createElement('div');
   row.className = 'result-row';
+  const top = document.createElement('div');
+  top.className = 'row-top';
   const tiles = document.createElement('div');
   tiles.className = 'tiles';
   for (let i=0;i<item.word.length;i++){
     const cls = item.classes ? item.classes[i] : 'real';
     tiles.appendChild(resultTileEl(item.word[i], cls));
   }
-  row.appendChild(tiles);
+  top.appendChild(tiles);
 
   const meta = document.createElement('div');
   meta.className = 'result-meta';
@@ -1291,7 +1321,8 @@ function makeResultRow(item, onPlace){
   goBtn.className = 'go-board-btn'; goBtn.type = 'button'; goBtn.textContent = 'на доску';
   goBtn.addEventListener('click', ()=>onPlace(item));
   meta.appendChild(goBtn);
-  row.appendChild(meta);
+  top.appendChild(meta);
+  row.appendChild(top);
   return row;
 }
 
@@ -1448,7 +1479,24 @@ function initBoard(){
   const suggestList = document.getElementById('suggest-list');
   const histEl = document.getElementById('move-history');
   const clearBtn = document.getElementById('game-clear');
+  const burnInput = document.getElementById('burn-input');
+  const burnAdd = document.getElementById('burn-add');
+  const burnList = document.getElementById('burn-list');
   document.getElementById('hand-input').addEventListener('input', ()=>renderBag());
+
+  function renderBurnList(){
+    const entries = Object.keys(BURNED).filter(ch=>BURNED[ch]>0);
+    if (!entries.length){ burnList.textContent = ''; return; }
+    burnList.textContent = 'Сожжено: ' + entries.map(ch => ch.toUpperCase() + '×' + BURNED[ch]).join(', ');
+  }
+  burnAdd.addEventListener('click', ()=>{
+    const ch = burnInput.value.toLowerCase().replace(/ё/g,'е').replace(/[^а-я]/g,'');
+    if (!ch) return;
+    BURNED[ch] = (BURNED[ch]||0) + 1;
+    burnInput.value = '';
+    renderBurnList();
+    renderBag();
+  });
 
   let pending = null;   // {word, classes, bingo, who, totalHandTiles, finalClasses, finalBingo}
   let orient = 'h';
@@ -1693,6 +1741,7 @@ function initBoard(){
       renderBoard();
       renderHistory();
       renderBag();
+      renderBurnList();
     }
   });
 
@@ -1707,9 +1756,11 @@ function initBoard(){
   function makeSuggestRow(mv, dataset){
     const row = document.createElement('div');
     row.className = 'result-row';
+    const top = document.createElement('div');
+    top.className = 'row-top';
     const tiles = document.createElement('div'); tiles.className='tiles';
     for (let i=0;i<mv.word.length;i++) tiles.appendChild(resultTileEl(mv.word[i], mv.classes[i]));
-    row.appendChild(tiles);
+    top.appendChild(tiles);
     const meta = document.createElement('div'); meta.className='result-meta';
     const pos = document.createElement('span'); pos.className='suggest-row-meta';
     pos.textContent = (mv.r0+1)+','+(mv.c0+1)+' '+(mv.dr?'↓':'→');
@@ -1719,7 +1770,6 @@ function initBoard(){
     if (risks.length){
       const rb = document.createElement('span'); rb.className='badge risk';
       rb.textContent = '⚠ можно дополнить';
-      rb.title = risks.map(r => (r.dir==='после' ? mv.word+'→'+r.example : r.example.toUpperCase()+' (буквы перед словом)')).join('; ');
       meta.appendChild(rb);
     }
     const sc=document.createElement('span'); sc.className='badge score'; sc.textContent=mv.total+' очк.'; meta.appendChild(sc);
@@ -1728,7 +1778,28 @@ function initBoard(){
       showPending(mv.word, mv.classes, mv.bingo, 'me', {r0:mv.r0,c0:mv.c0,dr:mv.dr}, currentHandTotal(), 'suggest');
     });
     meta.appendChild(goBtn);
-    row.appendChild(meta);
+    top.appendChild(meta);
+    row.appendChild(top);
+
+    const ddr = mv.dr, ddc = mv.dr?0:1;
+    const connNotes = [];
+    let hasFixed = false;
+    for (let i=0;i<mv.word.length;i++){
+      if (mv.classes[i]==='fixed'){ hasFixed = true; continue; }
+      const r = mv.r0+ddr*i, c = mv.c0+ddc*i;
+      const cw = buildCrossWord(r, c, ddr, ddc, mv.word[i]);
+      if (cw) connNotes.push(cw.toUpperCase());
+    }
+    if (connNotes.length){
+      const note = document.createElement('div'); note.className='conn-note';
+      note.textContent = (hasFixed ? 'Также образует на пересечении: ' : 'Соединяется с доской через: ') + connNotes.join(', ');
+      row.appendChild(note);
+    } else if (!hasFixed && !boardIsEmpty()){
+      const note = document.createElement('div'); note.className='conn-note';
+      note.textContent = 'Примыкает впритык к соседней букве без отдельного пересекающего слова.';
+      row.appendChild(note);
+    }
+
     if (risks.length){
       const note = document.createElement('div'); note.className='risk-note';
       note.textContent = 'Соперник может дописать буквы и забрать слово себе: ' +
@@ -1773,23 +1844,42 @@ function initBoard(){
 
   jokerBtn.addEventListener('click', ()=>{
     if (!lastSuggestCtx) return;
-    jokerStatus.textContent = 'Считаю вариант с лишним джокером…';
+    jokerStatus.textContent = 'Считаю варианты с докупкой джокеров (это медленнее, обычно несколько секунд)…';
     jokerBtn.disabled = true;
-    setTimeout(()=>{
-      const { handVal, dataset, bestScore } = lastSuggestCtx;
-      const movesPlus = generateMoves(handVal + '*', dataset);
-      jokerBtn.disabled = false;
-      if (!movesPlus.length || movesPlus[0].total <= bestScore){
-        jokerStatus.textContent = 'Докупка джокера не даёт более выгодного слова — стандартный вариант уже лучший.';
+    const { handVal, dataset, bestScore } = lastSuggestCtx;
+    const MAX_EXTRA = 3;
+    const rows = [];
+    let bestSoFar = bestScore;
+    let bestOverall = null;
+
+    function step(k){
+      if (k > MAX_EXTRA){
+        jokerBtn.disabled = false;
+        if (!rows.length){
+          jokerStatus.textContent = 'Докупка джокеров не даёт более выгодного слова — стандартный вариант (' + bestScore + ' очков) уже лучший.';
+          return;
+        }
+        jokerStatus.innerHTML = 'Без докупки лучший вариант — <b>' + bestScore + '</b> очков. С докупкой выгоднее:<br>' +
+          rows.map(r => '+' + r.k + ' джокер' + (r.k===1?'':(r.k<5?'а':'ов')) + ': <b>' + r.mv.word.toUpperCase() + '</b> — ' + r.mv.total + ' очков').join('<br>');
+        if (bestOverall){
+          const row = makeSuggestRow(bestOverall.mv, dataset);
+          row.style.marginTop = '8px';
+          suggestList.insertBefore(row, suggestList.firstChild);
+        }
         return;
       }
-      const best = movesPlus[0];
-      jokerStatus.innerHTML = 'С докупкой джокера доступно: <b>' + best.word.toUpperCase() + '</b> — ' + best.total +
-        ' очков (сейчас без джокера лучший вариант — ' + bestScore + '). Решайте, стоит ли разница в очках цены звёздочки.';
-      const row = makeSuggestRow(best, dataset);
-      row.style.marginTop = '8px';
-      suggestList.insertBefore(row, suggestList.firstChild);
-    }, 10);
+      setTimeout(()=>{
+        const movesPlus = generateMoves(handVal + '*'.repeat(k), dataset);
+        if (movesPlus.length && movesPlus[0].total > bestSoFar){
+          bestSoFar = movesPlus[0].total;
+          const entry = { k, mv: movesPlus[0] };
+          rows.push(entry);
+          bestOverall = entry;
+        }
+        step(k+1);
+      }, 10);
+    }
+    step(1);
   });
 
   placeOnBoard = (item)=>{
@@ -1884,4 +1974,3 @@ boot();
 </script>
 </body>
 </html>
-
