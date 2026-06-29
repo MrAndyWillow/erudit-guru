@@ -89,6 +89,8 @@ header.top{ margin-bottom: 22px; }
   max-width: 46ch;
 }
 .dict-toggle{ display:flex; gap:6px; margin: 16px 0 8px; }
+.board-select{ display:flex; align-items:center; gap:8px; margin: 0 0 4px; flex-wrap:wrap; }
+.board-select .dict-opt:disabled{ opacity:.5; cursor:not-allowed; }
 .dict-opt{
   appearance:none; border:1px solid var(--line); background:var(--panel); color:var(--ink-dim);
   font-family:var(--font-body); font-size:.82rem; font-weight:600; padding:8px 12px; border-radius:999px;
@@ -332,6 +334,9 @@ footer.note{ text-align:center; color:var(--ink-faint); font-size:.76rem; margin
 .who-toggle button[aria-pressed="true"]{ background:var(--jade-deep); color:#9FE0CD; border-color:var(--jade); }
 .pending-actions{ display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap; }
 .pending-actions .primary-btn{ margin:0; padding:12px; }
+.burn-picker{ background:rgba(181,87,63,.1); border:1px solid var(--rust); border-radius:12px; padding:10px 12px; margin-top:10px; }
+.burn-picker .letter-pad{ margin-bottom:0; }
+.pad-key.burn-pick[aria-pressed="true"]{ background:var(--rust); color:#fff; border-color:#7a3a28; }
 
 .suggest-row-meta{ font-family:var(--font-mono); font-size:.74rem; color:var(--ink-faint); margin-right:auto; }
 
@@ -483,6 +488,13 @@ footer.note{ text-align:center; color:var(--ink-faint); font-size:.76rem; margin
     <h2>Доска и множители</h2>
     <p class="hint">Записывайте сюда все ходы — свои и соперника — и сервис будет подбирать лучший следующий ход с учётом всей карты партии.</p>
 
+    <div class="board-select" role="radiogroup" aria-label="Раскладка доски">
+      <span class="hint" style="margin:0;">Раскладка доски:</span>
+      <button class="dict-opt" id="board-pick-1" aria-pressed="true" type="button">Доска 1</button>
+      <button class="dict-opt" id="board-pick-2" aria-pressed="false" type="button">Доска 2</button>
+    </div>
+    <p class="hint" id="board-lock-note" style="margin-top:4px;" hidden>Раскладку доски можно менять только до первого хода — очистите партию (⟲), чтобы выбрать другую.</p>
+
     <div class="board-legend">
       <span class="lg-item"><span class="lg-swatch L2"></span>×2 буква</span>
       <span class="lg-item"><span class="lg-swatch L3"></span>×3 буква</span>
@@ -525,6 +537,10 @@ footer.note{ text-align:center; color:var(--ink-faint); font-size:.76rem; margin
       </div>
       <p class="board-warn" id="board-warn" hidden></p>
       <div class="score-breakdown" id="board-breakdown"></div>
+      <div id="burn-picker" class="burn-picker" hidden>
+        <p class="hint" style="margin:10px 0 6px;" id="burn-picker-label"></p>
+        <div class="letter-pad" id="burn-picker-pad"></div>
+      </div>
       <div class="pending-actions">
         <div class="who-toggle" role="radiogroup" aria-label="Кто ходил">
           <button id="who-me" aria-pressed="true" type="button">Я</button>
@@ -612,7 +628,7 @@ const SCRATCH = new Int16Array(ALPHA_SIZE);
    r=W3(слово×3) g=L2(буква×2) b=L3(буква×3) o=W2(слово×2) *=старт .=обычная
 ============================================================ */
 const BOARD_SIZE = 15;
-const BOARD_ROWS = [
+const BOARD_ROWS_1 = [
 "r..g...r...g..r",
 ".b...o...o...b.",
 "..b...g.g...b..",
@@ -629,6 +645,25 @@ const BOARD_ROWS = [
 ".b...o...o...b.",
 "r..g...r...g..r"
 ];
+const BOARD_ROWS_2 = [
+"...r..b.b..r...",
+"..g..o...o..g..",
+".g..g.....g..g.",
+"r..b...o...b..r",
+"..g...g.g...g..",
+".o...b...b...o.",
+"b...g.....g...b",
+"...o...*...o...",
+"b...g.....g...b",
+".o...b...b...o.",
+"..g...g.g...g..",
+"r..b...o...b..r",
+".g..g.....g..g.",
+"..g..o...o..g..",
+"...r..b.b..r..."
+];
+const BOARDS = { 1: BOARD_ROWS_1, 2: BOARD_ROWS_2 };
+let ACTIVE_BOARD_ID = 1;
 const CELL_INFO = {
   'g': { kind:'letter', factor:2, cls:'L2' },
   'b': { kind:'letter', factor:3, cls:'L3' },
@@ -639,7 +674,7 @@ const CELL_INFO = {
 };
 function cellAt(r,c){
   if (r<0||c<0||r>=BOARD_SIZE||c>=BOARD_SIZE) return null;
-  return CELL_INFO[BOARD_ROWS[r][c]];
+  return CELL_INFO[BOARDS[ACTIVE_BOARD_ID][r][c]];
 }
 
 function pointOf(ch){ const idx = LETTER_TO_IDX.get(ch); return idx===undefined?0:POINTS[idx]; }
@@ -1137,7 +1172,8 @@ function hasConnection(len, r0, c0, dr, dc, classes){
   return false;
 }
 
-function commitMove(word, r0, c0, dr, dc, classes, bingo, who){
+function commitMove(word, r0, c0, dr, dc, classes, bingo, who, opts){
+  opts = opts || {};
   const len = word.length;
   const newCells = [];
   for (let i=0;i<len;i++){
@@ -1148,7 +1184,13 @@ function commitMove(word, r0, c0, dr, dc, classes, bingo, who){
     }
   }
   const boardRes = computeBoardScore(word, classes, bingo, r0, c0, dr, dc);
-  const move = { id: moveSeq++, word, r0, c0, dr, dc, who, score: boardRes.fits ? boardRes.total : 0, newCells };
+  const move = {
+    id: moveSeq++, word, r0, c0, dr, dc, who,
+    score: boardRes.fits ? boardRes.total : 0,
+    newCells,
+    handBefore: (opts.handBefore !== undefined) ? opts.handBefore : null,
+    burnedLetters: opts.burnedLetters || []
+  };
   MOVES.push(move);
   return move;
 }
@@ -1157,6 +1199,9 @@ function undoLastMove(){
   const m = MOVES.pop();
   if (!m) return null;
   for (const {r,c} of m.newCells) BOARD_STATE[r][c] = null;
+  for (const ch of m.burnedLetters){
+    if (BURNED[ch]) BURNED[ch]--;
+  }
   return m;
 }
 
@@ -1167,6 +1212,21 @@ function clearGame(){
 }
 
 let BURNED = {};
+
+function getSpareLetters(handStr, word, classes){
+  const { counts } = lettersToRack(handStr);
+  for (let i=0;i<word.length;i++){
+    if (classes[i] === 'real'){
+      const idx = LETTER_TO_IDX.get(word[i]);
+      if (idx !== undefined && counts[idx] > 0) counts[idx]--;
+    }
+  }
+  const spare = [];
+  for (let i=0;i<ALPHA_SIZE;i++){
+    for (let k=0;k<counts[i];k++) spare.push(LETTER_ORDER[i]);
+  }
+  return spare;
+}
 
 function computeBagRemaining(handStr){
   const remaining = {};
@@ -1467,6 +1527,9 @@ function initBoard(){
   const tilesEl = document.getElementById('pending-tiles');
   const warnEl = document.getElementById('board-warn');
   const breakdownEl = document.getElementById('board-breakdown');
+  const burnPickerEl = document.getElementById('burn-picker');
+  const burnLabelEl = document.getElementById('burn-picker-label');
+  const burnPadEl = document.getElementById('burn-picker-pad');
   const whoMe = document.getElementById('who-me');
   const whoOpp = document.getElementById('who-opp');
   const confirmBtn = document.getElementById('confirm-move');
@@ -1526,6 +1589,28 @@ function initBoard(){
   }
   buildGrid();
 
+  const boardPick1 = document.getElementById('board-pick-1');
+  const boardPick2 = document.getElementById('board-pick-2');
+  const boardLockNote = document.getElementById('board-lock-note');
+
+  function syncBoardLock(){
+    const locked = MOVES.length > 0;
+    boardPick1.disabled = locked;
+    boardPick2.disabled = locked;
+    boardLockNote.hidden = !locked;
+  }
+  function pickBoard(id){
+    if (MOVES.length > 0) return;
+    ACTIVE_BOARD_ID = id;
+    boardPick1.setAttribute('aria-pressed', String(id===1));
+    boardPick2.setAttribute('aria-pressed', String(id===2));
+    buildGrid();
+    renderBoard();
+  }
+  boardPick1.addEventListener('click', ()=>pickBoard(1));
+  boardPick2.addEventListener('click', ()=>pickBoard(2));
+  syncBoardLock();
+
   function syncOrientButtons(){
     orientH.setAttribute('aria-pressed', String(orient==='h'));
     orientV.setAttribute('aria-pressed', String(orient==='v'));
@@ -1578,7 +1663,15 @@ function initBoard(){
       const sc = document.createElement('span'); sc.className='mh-score'; sc.textContent=m.score; row.appendChild(sc);
       if (idx === MOVES.length-1){
         const undo = document.createElement('button'); undo.className='mh-undo'; undo.type='button'; undo.textContent='↩'; undo.title='Отменить этот ход';
-        undo.addEventListener('click', ()=>{ undoLastMove(); renderBoard(); renderHistory(); renderBag(); });
+        undo.addEventListener('click', ()=>{
+          const m = undoLastMove();
+          if (m && m.handBefore !== null){
+            const hi = document.getElementById('hand-input');
+            hi.value = m.handBefore;
+            hi.dispatchEvent(new Event('input', {bubbles:true}));
+          }
+          renderBoard(); renderHistory(); renderBag(); renderBurnList(); syncBoardLock();
+        });
         row.appendChild(undo);
       }
       histEl.appendChild(row);
@@ -1676,10 +1769,48 @@ function initBoard(){
       'Множитель слова: <b>×'+boardRes.wordMult+'</b>'+
       (bingo?'<br>Бонус за все фишки: <b>+15</b>':'')+
       '<br><span class="final">'+boardRes.total+' очков</span>';
+
+    renderBurnPicker();
   }
 
-  function showPending(word, classes, bingo, who, preset, totalHandTiles, source){
-    pending = { word, classes, bingo, who, totalHandTiles: totalHandTiles||0, source: source||'search' };
+  function renderBurnPicker(){
+    const need = pending.purchasedJokers||0;
+    if (need<=0){ burnPickerEl.hidden = true; confirmBtn.disabled = false; return; }
+    burnPickerEl.hidden = false;
+    const handVal = sanitizeRackChars(document.getElementById('hand-input').value);
+    const spare = getSpareLetters(handVal, pending.word, pending.finalClasses);
+    pending.selectedBurns = pending.selectedBurns.filter(ch => spare.includes(ch));
+    burnLabelEl.textContent = 'Для этого слова нужно купить ' + need + ' джокер' + (need===1?'':(need<5?'а':'ов')) +
+      '. Выберите ' + need + ' ненужн' + (need===1?'ую букву':'ые буквы') + ' для сожжения (выбрано ' + pending.selectedBurns.length + ' из ' + need + '):';
+    burnPadEl.innerHTML = '';
+    if (!spare.length){
+      const note = document.createElement('p'); note.className='hint'; note.style.margin='4px 0 0';
+      note.textContent = 'В фишках нет свободных букв — это слово использует их все. Уберите лишние буквы из «Моих фишек» или выберите другое слово.';
+      burnPadEl.appendChild(note);
+    }
+    const counted = {};
+    spare.forEach(ch => counted[ch] = (counted[ch]||0)+1);
+    Object.keys(counted).sort().forEach(ch=>{
+      const btn = document.createElement('button');
+      btn.className = 'pad-key burn-pick'; btn.type = 'button';
+      const selCount = pending.selectedBurns.filter(x=>x===ch).length;
+      btn.textContent = ch + (counted[ch]>1 ? ' ('+selCount+'/'+counted[ch]+')' : '');
+      btn.setAttribute('aria-pressed', String(selCount>0 && selCount>=counted[ch]));
+      if (selCount>0) btn.classList.add('partial');
+      btn.addEventListener('click', ()=>{
+        const idx = pending.selectedBurns.indexOf(ch);
+        if (idx>=0){ pending.selectedBurns.splice(idx,1); }
+        else if (pending.selectedBurns.length < need){ pending.selectedBurns.push(ch); }
+        renderBurnPicker();
+      });
+      burnPadEl.appendChild(btn);
+    });
+    confirmBtn.disabled = pending.selectedBurns.length !== need;
+  }
+
+  function showPending(word, classes, bingo, who, preset, totalHandTiles, source, purchasedJokers){
+    pending = { word, classes, bingo, who, totalHandTiles: totalHandTiles||0, source: source||'search',
+      purchasedJokers: purchasedJokers||0, selectedBurns: [] };
     if (preset){ start = {r:preset.r0, c:preset.c0}; orient = preset.dr ? 'v' : 'h'; }
     else start = null;
     syncOrientButtons();
@@ -1704,15 +1835,37 @@ function initBoard(){
 
   confirmBtn.addEventListener('click', ()=>{
     if (!pending || !start || !pending.finalClasses) return;
+    if ((pending.purchasedJokers||0) > 0 && pending.selectedBurns.length !== pending.purchasedJokers) return;
     const dr = orient==='v'?1:0, dc=orient==='v'?0:1;
-    commitMove(pending.word, start.r, start.c, dr, dc, pending.finalClasses, pending.finalBingo, pending.who);
+    const handBeforeVal = document.getElementById('hand-input').value;
+    const burnsThisMove = pending.selectedBurns.slice();
+
+    commitMove(pending.word, start.r, start.c, dr, dc, pending.finalClasses, pending.finalBingo, pending.who, {
+      handBefore: handBeforeVal,
+      burnedLetters: burnsThisMove
+    });
+
+    for (const ch of burnsThisMove) BURNED[ch] = (BURNED[ch]||0) + 1;
+
     if (pending.who === 'me' && (pending.source === 'search' || pending.source === 'suggest')){
       consumeFromHandInput(pending.word, pending.finalClasses);
     }
+    if (burnsThisMove.length){
+      const hi = document.getElementById('hand-input');
+      let val = hi.value;
+      for (const ch of burnsThisMove){
+        const idx = val.indexOf(ch);
+        if (idx>=0) val = val.slice(0,idx)+val.slice(idx+1);
+      }
+      hi.value = val;
+      hi.dispatchEvent(new Event('input', {bubbles:true}));
+    }
+    renderBurnList();
     clearPending();
     renderBoard();
     renderHistory();
     renderBag();
+    syncBoardLock();
   });
   cancelBtn.addEventListener('click', clearPending);
 
@@ -1742,6 +1895,7 @@ function initBoard(){
       renderHistory();
       renderBag();
       renderBurnList();
+      syncBoardLock();
     }
   });
 
@@ -1753,7 +1907,8 @@ function initBoard(){
   });
   manualClear.addEventListener('click', ()=>{ manualInput.value=''; manualInput.focus(); });
 
-  function makeSuggestRow(mv, dataset){
+  function makeSuggestRow(mv, dataset, purchasedJokers){
+    purchasedJokers = purchasedJokers || 0;
     const row = document.createElement('div');
     row.className = 'result-row';
     const top = document.createElement('div');
@@ -1766,6 +1921,7 @@ function initBoard(){
     pos.textContent = (mv.r0+1)+','+(mv.c0+1)+' '+(mv.dr?'↓':'→');
     meta.appendChild(pos);
     if (mv.bingo){ const b=document.createElement('span'); b.className='badge bingo'; b.textContent='все фишки +15'; meta.appendChild(b); }
+    if (purchasedJokers>0){ const jb=document.createElement('span'); jb.className='badge risk'; jb.textContent='+'+purchasedJokers+' джокер'+(purchasedJokers===1?'':'а'); meta.appendChild(jb); }
     const risks = checkExtensionRisk(mv.word, mv.r0, mv.c0, mv.dr, mv.dr?0:1, dataset);
     if (risks.length){
       const rb = document.createElement('span'); rb.className='badge risk';
@@ -1775,7 +1931,7 @@ function initBoard(){
     const sc=document.createElement('span'); sc.className='badge score'; sc.textContent=mv.total+' очк.'; meta.appendChild(sc);
     const goBtn=document.createElement('button'); goBtn.className='go-board-btn'; goBtn.type='button'; goBtn.textContent='на доску';
     goBtn.addEventListener('click', ()=>{
-      showPending(mv.word, mv.classes, mv.bingo, 'me', {r0:mv.r0,c0:mv.c0,dr:mv.dr}, currentHandTotal(), 'suggest');
+      showPending(mv.word, mv.classes, mv.bingo, 'me', {r0:mv.r0,c0:mv.c0,dr:mv.dr}, currentHandTotal(), 'suggest', purchasedJokers);
     });
     meta.appendChild(goBtn);
     top.appendChild(meta);
@@ -1862,7 +2018,7 @@ function initBoard(){
         jokerStatus.innerHTML = 'Без докупки лучший вариант — <b>' + bestScore + '</b> очков. С докупкой выгоднее:<br>' +
           rows.map(r => '+' + r.k + ' джокер' + (r.k===1?'':(r.k<5?'а':'ов')) + ': <b>' + r.mv.word.toUpperCase() + '</b> — ' + r.mv.total + ' очков').join('<br>');
         if (bestOverall){
-          const row = makeSuggestRow(bestOverall.mv, dataset);
+          const row = makeSuggestRow(bestOverall.mv, dataset, bestOverall.k);
           row.style.marginTop = '8px';
           suggestList.insertBefore(row, suggestList.firstChild);
         }
